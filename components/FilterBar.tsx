@@ -40,7 +40,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ sportsAndLeagues, marketTy
 
     return (
         <div className="bg-brand-bg-light p-4 rounded-xl border border-brand-border w-full">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Sport Filter */}
                  <div>
                     <label htmlFor="sport-filter" className="text-xs font-bold text-brand-text-secondary mb-1 block">Sport</label>
@@ -88,7 +88,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({ sportsAndLeagues, marketTy
                         ))}
                     </select>
                 </div>
-
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                  {/* Sort By */}
                 <div>
                     <label htmlFor="sort-by" className="text-xs font-bold text-brand-text-secondary mb-1 block">Sort By</label>
@@ -105,7 +106,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ sportsAndLeagues, marketTy
                 </div>
 
                 {/* Confidence Filter */}
-                <div className="sm:col-span-2 lg:col-span-1">
+                <div>
                     <label className="text-xs font-bold text-brand-text-secondary mb-1 block">Confidence</label>
                     <div className="flex-shrink-0 bg-brand-bg-dark h-10 p-1 rounded-lg border border-brand-border flex items-center gap-1">
                         {ALL_CONFIDENCES.map(level => (
@@ -114,12 +115,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({ sportsAndLeagues, marketTy
                                 onClick={() => handleFilter('confidence', level)}
                                 className={`w-full h-full text-xs font-bold rounded-md transition-colors ${filters.confidence === level ? 'bg-brand-green text-brand-bg-dark' : 'text-brand-text-secondary hover:bg-brand-border'}`}
                             >
-                                {level === 'All' ? 'All' : level.slice(0,1)}
+                                {level}
                             </button>
                         ))}
                     </div>
                 </div>
-
             </div>
              <button
                 onClick={handleReset}

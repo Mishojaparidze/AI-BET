@@ -85,6 +85,18 @@ const AlertTriangleIcon: React.FC<{className?: string}> = ({ className }) => (
     </svg>
 );
 
+const TrendingUpIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>
+    </svg>
+);
+
+const TrendingDownIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>
+    </svg>
+);
+
 
 export const MatchCard: React.FC<MatchCardProps> = ({ prediction, onViewAnalysis, onAddToTicket, isTicketed }) => {
   const [currentPrediction, setCurrentPrediction] = useState(prediction);
@@ -221,6 +233,16 @@ export const MatchCard: React.FC<MatchCardProps> = ({ prediction, onViewAnalysis
                             </ul>
                         </div>
                     </div>
+                </div>
+                 <div className="bg-brand-bg-dark rounded-lg p-4 text-left border border-brand-border">
+                    <h4 className="text-sm font-bold text-brand-text-primary mb-2">Expected Value (EV)</h4>
+                    <div className={`flex items-center text-xl font-bold ${aiAnalysis.expectedValue > 0 ? 'text-brand-green' : 'text-brand-red'}`}>
+                        {aiAnalysis.expectedValue > 0 ? <TrendingUpIcon className="w-5 h-5 mr-2" /> : <TrendingDownIcon className="w-5 h-5 mr-2" />}
+                        <span>{aiAnalysis.expectedValue > 0 ? '+' : ''}{aiAnalysis.expectedValue.toFixed(1)}%</span>
+                    </div>
+                    <p className="text-xs text-brand-text-secondary mt-1">
+                        Indicates the expected profit margin on this bet.
+                    </p>
                 </div>
                 {(stadium || referee || attendance) && (
                      <div className="bg-brand-bg-dark rounded-lg p-4 text-left border border-brand-border">

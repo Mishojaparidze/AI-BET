@@ -13,6 +13,7 @@ import { AiChat } from './components/AiChat';
 import { ResponsibleGamblingBanner } from './components/ResponsibleGamblingBanner';
 import { SettingsModal } from './components/SettingsModal';
 import { LiveBetModal } from './components/LiveBetModal';
+import { BetOfTheDayCard } from './components/BetOfTheDayCard';
 import * as apiService from './services/apiService';
 import * as websocketService from './services/websocketService';
 import { type MatchPrediction, type LiveMatchPrediction, type BankrollState, type UserBet, type TicketSelection, type FilterState, type UserSettings, ConfidenceTier } from './types';
@@ -233,6 +234,18 @@ const App: React.FC = () => {
         setLiveBetToTrack(bet);
     }
 
+    // Calculate Bet of the Day using useMemo for efficiency
+    const betOfTheDay = useMemo(() => {
+        const highConfidenceBets = predictions.filter(p => p.confidence === ConfidenceTier.High);
+        if (highConfidenceBets.length === 0) {
+            return null; // No high confidence bets available
+        }
+        // Find the one with the highest expected value
+        return highConfidenceBets.reduce((best, current) => 
+            current.aiAnalysis.expectedValue > best.aiAnalysis.expectedValue ? current : best
+        );
+    }, [predictions]);
+
     const sportsAndLeagues = useMemo(() => {
         const structure: Record<string, Set<string>> = {};
         predictions.forEach(p => {
@@ -287,10 +300,23 @@ const App: React.FC = () => {
                        
                         {predictions.length > 0 && bankroll && (
                              <section>
-                                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                                    <h2 className="text-3xl font-bold text-brand-text-primary border-l-4 border-brand-green pl-4 mb-4 md:mb-0">
+                                <div className="mb-6">
+                                    <h2 className="text-3xl font-bold text-brand-text-primary border-l-4 border-brand-green pl-4">
                                         Pre-Match AI Advisor
                                     </h2>
+                                </div>
+
+                                {betOfTheDay && (
+                                    <BetOfTheDayCard 
+                                        prediction={betOfTheDay}
+                                        onViewAnalysis={() => handleViewAnalysis(betOfTheDay)}
+                                        onAddToTicket={() => handleAddToTicket(betOfTheDay)}
+                                        isTicketed={ticketSelections.some(s => s.id === betOfTheDay.id)}
+                                    />
+                                )}
+                                
+                                <div className="mt-8">
+                                    <h3 className="text-2xl font-bold text-brand-text-primary mb-4">All Predictions</h3>
                                     <FilterBar
                                         sportsAndLeagues={sportsAndLeagues}
                                         marketTypes={marketTypes}
@@ -299,7 +325,7 @@ const App: React.FC = () => {
                                     />
                                 </div>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-6">
                                     {filteredPredictions.map((p) => (
                                         <MatchCard 
                                             key={p.id}
@@ -311,7 +337,7 @@ const App: React.FC = () => {
                                     ))}
                                 </div>
                                 {filteredPredictions.length === 0 && (
-                                    <div className="text-center py-16 bg-brand-bg-light rounded-lg">
+                                    <div className="text-center py-16 bg-brand-bg-light rounded-lg mt-6">
                                         <p className="text-xl font-semibold text-brand-text-primary">No Predictions Found</p>
                                         <p className="text-brand-text-secondary mt-2">Try adjusting your filters to find more matches.</p>
                                     </div>
