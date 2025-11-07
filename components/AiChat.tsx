@@ -40,7 +40,7 @@ const BrainIcon: React.FC<{className?: string}> = ({ className }) => (
 export const AiChat: React.FC<AiChatProps> = ({ predictions }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'assistant', content: "Hello! I'm BetGenius AI. How can I help you analyze today's matches? Ask me to find the best bets, summarize a match, or compare opportunities." }
+        { role: 'assistant', content: "Hello! I'm BetGenius AI. I can analyze all available matches for you. Try asking something like, 'Find me the high confidence bets with the best value.' to get started." }
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);

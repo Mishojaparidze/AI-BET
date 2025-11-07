@@ -1,5 +1,5 @@
 import React from 'react';
-import { type TicketVariation } from '../types';
+import { type TicketVariation, type UserSettings, type BankrollState } from '../types';
 
 const BetIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -10,12 +10,23 @@ const BetIcon: React.FC<{className?: string}> = ({ className }) => (
 interface TicketVariationCardProps {
     variation: TicketVariation;
     onPlaceBet: () => void;
-    bankroll: number;
+    bankrollState: BankrollState;
+    userSettings: UserSettings;
 }
 
-export const TicketVariationCard: React.FC<TicketVariationCardProps> = ({ variation, onPlaceBet, bankroll }) => {
+export const TicketVariationCard: React.FC<TicketVariationCardProps> = ({ variation, onPlaceBet, bankrollState, userSettings }) => {
     const { title, description, bets, totalStake, potentialReturn, winProbability, totalEV } = variation;
-    const isAffordable = bankroll >= totalStake;
+    
+    const remainingDailyLimit = userSettings.maxDailyStake - bankrollState.dailyWagered;
+    const isOverSingleBetLimit = totalStake > userSettings.maxStakePerBet;
+    const isOverDailyLimit = totalStake > remainingDailyLimit;
+    const isAffordable = bankrollState.current >= totalStake;
+    const isDisabled = !isAffordable || isOverSingleBetLimit || isOverDailyLimit;
+
+    let disabledTitle = '';
+    if (!isAffordable) disabledTitle = 'Insufficient bankroll.';
+    else if (isOverSingleBetLimit) disabledTitle = `Stake exceeds your max bet limit of $${userSettings.maxStakePerBet.toFixed(2)}.`;
+    else if (isOverDailyLimit) disabledTitle = `Stake exceeds your remaining daily limit of $${remainingDailyLimit.toFixed(2)}.`;
     
     return (
         <div className="bg-brand-bg-dark border border-brand-border rounded-lg overflow-hidden">
@@ -62,7 +73,8 @@ export const TicketVariationCard: React.FC<TicketVariationCardProps> = ({ variat
                  </div>
                  <button
                     onClick={onPlaceBet}
-                    disabled={!isAffordable}
+                    disabled={isDisabled}
+                    title={disabledTitle}
                     className="w-full mt-3 flex items-center justify-center px-4 py-2 bg-brand-green text-brand-bg-dark font-bold rounded-lg transition-colors duration-300 hover:bg-brand-green/80 disabled:bg-brand-border disabled:text-brand-text-secondary disabled:cursor-not-allowed"
                  >
                      <BetIcon className="w-5 h-5 mr-2" />

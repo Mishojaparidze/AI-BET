@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 const BrainIcon: React.FC<{className?: string}> = ({ className }) => (
@@ -7,14 +6,35 @@ const BrainIcon: React.FC<{className?: string}> = ({ className }) => (
     </svg>
 );
 
-export const Header: React.FC = () => {
+const CogIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M12 2v2"/><path d="M12 22v-2"/><path d="m17 7 1.4-1.4"/><path d="m6.4 18.4 1.4-1.4"/><path d="M22 12h-2"/><path d="M4 12H2"/><path d="m17 17-1.4 1.4"/><path d="m6.4 6.4 1.4 1.4"/>
+    </svg>
+);
+
+
+interface HeaderProps {
+    onOpenSettings: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   return (
-    <header className="bg-brand-bg-light shadow-md">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-center">
-        <BrainIcon className="w-8 h-8 text-brand-green mr-3" />
-        <h1 className="text-2xl font-bold tracking-wider text-brand-text-primary">
-          BetGenius AI
-        </h1>
+    <header className="bg-brand-bg-light shadow-md sticky top-0 z-30">
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+         <div className="w-10"></div> {/* Spacer */}
+        <div className="flex items-center justify-center">
+            <BrainIcon className="w-8 h-8 text-brand-green mr-3" />
+            <h1 className="text-2xl font-bold tracking-wider text-brand-text-primary">
+              BetGenius AI
+            </h1>
+        </div>
+        <button 
+            onClick={onOpenSettings}
+            className="p-2 rounded-full text-brand-text-secondary hover:bg-brand-border hover:text-brand-text-primary transition-colors"
+            aria-label="Open Settings"
+        >
+            <CogIcon className="w-6 h-6" />
+        </button>
       </div>
     </header>
   );

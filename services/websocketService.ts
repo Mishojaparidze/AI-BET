@@ -1,89 +1,92 @@
-import { type LiveMatchPrediction, Momentum } from '../types';
+import { type LiveMatchPrediction, type MatchPrediction, Momentum } from '../types';
 
-type UpdateCallback = (prediction: LiveMatchPrediction) => void;
+type UpdateCallback = (prediction: MatchPrediction | LiveMatchPrediction) => void;
 
-// In a real app, this would be a WebSocket connection manager.
-// Here, we simulate it with intervals.
-// FIX: Changed NodeJS.Timeout to number, as setInterval in the browser returns a number.
-const matchUpdaters: Record<number, number> = {};
-const listeners: Record<number, UpdateCallback> = {};
+const listeners: Record<string, UpdateCallback[]> = {};
+let matchDataStore: Record<string, MatchPrediction | LiveMatchPrediction> = {};
+let intervalId: number | null = null;
 
-/**
- * Simulates connecting to a WebSocket endpoint for a specific match.
- * @param matchId The ID of the match to subscribe to.
- * @param initialPrediction The starting state of the match data.
- * @param onUpdate The callback function to call with updated data.
- */
-export const connectToMatch = (
-    matchId: number, 
-    initialPrediction: LiveMatchPrediction, 
-    onUpdate: UpdateCallback
-) => {
-    console.log(`[WebSocket] Connecting to match ${matchId}...`);
-    listeners[matchId] = onUpdate;
-
-    let currentPrediction = { ...initialPrediction };
-
-    // Start a simulation interval for this match
-    matchUpdaters[matchId] = setInterval(() => {
-        // Simulate a new update from the server
-        const newMatchTime = currentPrediction.matchTime + 3;
-        let newScoreA = currentPrediction.scoreA;
-        let newScoreB = currentPrediction.scoreB;
-        let newMomentum = currentPrediction.momentum;
-        let newLiveOdds = currentPrediction.liveOdds;
-        
-        // Simulate a goal scoring event
-        if (Math.random() > 0.95 && newMatchTime < 90) {
-             if (Math.random() > 0.5) {
-                newScoreA++;
-                newMomentum = Momentum.TeamA;
-                newLiveOdds *= 0.8;
-             } else {
-                newScoreB++;
-                newMomentum = Momentum.TeamB;
-                newLiveOdds *= 1.2;
-             }
-        } else if (Math.random() > 0.8) {
-            newMomentum = Momentum.Neutral;
-        }
-
-        const shouldRecommendCashOut = newLiveOdds < currentPrediction.odds / 2 && Math.random() > 0.7;
-
-        currentPrediction = {
-            ...currentPrediction,
-            matchTime: newMatchTime > 90 ? 90 : newMatchTime,
-            scoreA: newScoreA,
-            scoreB: newScoreB,
-            momentum: newMomentum,
-            liveOdds: parseFloat(newLiveOdds.toFixed(2)),
-            hasValueAlert: newLiveOdds > currentPrediction.odds * 1.5,
-            cashOutRecommendation: {
-                isRecommended: shouldRecommendCashOut,
-                value: shouldRecommendCashOut ? parseFloat((10 * newLiveOdds * 0.9).toFixed(2)) : null,
-                reason: shouldRecommendCashOut ? `Odds have dropped significantly. Securing profit is advised.` : null
-            }
-        };
-
-        // Push the update to the listener
-        if (listeners[matchId]) {
-            listeners[matchId](currentPrediction);
-        }
-        
-    }, 3000);
+const isLiveMatch = (p: MatchPrediction | LiveMatchPrediction): p is LiveMatchPrediction => {
+    return 'liveOdds' in p;
 };
 
-/**
- * Simulates disconnecting from the WebSocket for a match.
- * @param matchId The ID of the match to unsubscribe from.
- */
-export const disconnectFromMatch = (matchId: number) => {
-    console.log(`[WebSocket] Disconnecting from match ${matchId}...`);
-    if (matchUpdaters[matchId]) {
-        clearInterval(matchUpdaters[matchId]);
-        delete matchUpdaters[matchId];
+export const initializeFeed = (initialPredictions: (MatchPrediction | LiveMatchPrediction)[]) => {
+    if (intervalId) {
+        clearInterval(intervalId);
     }
+
+    matchDataStore = {};
+    initialPredictions.forEach(p => {
+        matchDataStore[p.id] = p;
+    });
+
+    const matchIds = Object.keys(matchDataStore);
+    if (matchIds.length === 0) return;
+
+    intervalId = setInterval(() => {
+        // Update a few random matches
+        for (let i = 0; i < 5; i++) { 
+            const randomId = matchIds[Math.floor(Math.random() * matchIds.length)];
+            let match = matchDataStore[randomId];
+            
+            if (!match) continue;
+
+            if (isLiveMatch(match)) {
+                const newMatchTime = match.matchTime + 2;
+                let newScoreA = match.scoreA;
+                let newScoreB = match.scoreB;
+                let newMomentum = match.momentum;
+                
+                if (Math.random() > 0.98 && newMatchTime < 90) {
+                     if (Math.random() > 0.5) { newScoreA++; newMomentum = Momentum.TeamA; } else { newScoreB++; newMomentum = Momentum.TeamB; }
+                } else if (Math.random() > 0.8) {
+                    newMomentum = Momentum.Neutral;
+                }
+
+                const liveOddsChange = (Math.random() - 0.45) * 0.15;
+                const newLiveOdds = Math.max(1.01, match.liveOdds + liveOddsChange);
+                const shouldRecommendCashOut = newLiveOdds < match.odds / 2 && Math.random() > 0.7;
+
+                match = {
+                    ...match,
+                    matchTime: newMatchTime > 90 ? 90 : newMatchTime,
+                    scoreA: newScoreA, scoreB: newScoreB, momentum: newMomentum,
+                    liveOdds: parseFloat(newLiveOdds.toFixed(2)),
+                    hasValueAlert: newLiveOdds > match.odds * 1.5,
+                    cashOutRecommendation: {
+                         isRecommended: shouldRecommendCashOut,
+                         value: shouldRecommendCashOut ? parseFloat((10 * newLiveOdds * 0.9).toFixed(2)) : null,
+                         reason: shouldRecommendCashOut ? `Odds have dropped significantly. Securing profit is advised.` : null
+                    }
+                };
+            } else {
+                const oddsChange = (Math.random() - 0.5) * 0.05;
+                const newOdds = Math.max(1.01, match.odds + oddsChange);
+                match = { ...match, odds: parseFloat(newOdds.toFixed(2)) };
+            }
+
+            matchDataStore[randomId] = match;
+
+            if (listeners[randomId]) {
+                listeners[randomId].forEach(cb => cb(match));
+            }
+        }
+    }, 2000);
+};
+
+export const subscribe = (matchId: string, callback: UpdateCallback) => {
+    if (!listeners[matchId]) {
+        listeners[matchId] = [];
+    }
+    listeners[matchId].push(callback);
+    
+    if (matchDataStore[matchId]) {
+        callback(matchDataStore[matchId]);
+    }
+};
+
+export const unsubscribe = (matchId: string, callback: UpdateCallback) => {
     if (listeners[matchId]) {
-        delete listeners[matchId];
+        listeners[matchId] = listeners[matchId].filter(cb => cb !== callback);
     }
 };

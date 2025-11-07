@@ -7,7 +7,8 @@ import { type MatchPrediction } from '../types';
 let ai: GoogleGenAI | null = null;
 try {
   ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-} catch (error) {
+} catch (error)
+{
   console.error("Failed to initialize GoogleGenAI. API_KEY might be missing.", error);
 }
 
@@ -34,7 +35,19 @@ export const getAiChatResponse = async (userPrompt: string, context: MatchPredic
 - When asked to find matches, list the teams, the AI prediction, the odds, and a brief justification based on the data provided.
 - Do not invent new data or predictions.`;
 
-  const stringifiedContext = JSON.stringify(context, null, 2);
+  // OPTIMIZATION: Create a simplified version of the context to reduce token count and improve performance.
+  const simplifiedContext = context.map(p => ({
+    id: p.id,
+    teamA: p.teamA,
+    teamB: p.teamB,
+    league: p.league,
+    prediction: p.prediction,
+    odds: p.odds,
+    confidence: p.confidence,
+    expectedValue: p.aiAnalysis.expectedValue,
+  }));
+
+  const stringifiedContext = JSON.stringify(simplifiedContext, null, 2);
 
   const fullPrompt = `${systemInstruction}
 

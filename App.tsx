@@ -10,8 +10,12 @@ import { MyBets } from './components/MyBets';
 import { TicketBuilder } from './components/TicketBuilder';
 import { FilterBar } from './components/FilterBar';
 import { AiChat } from './components/AiChat';
+import { ResponsibleGamblingBanner } from './components/ResponsibleGamblingBanner';
+import { SettingsModal } from './components/SettingsModal';
+import { LiveBetModal } from './components/LiveBetModal';
 import * as apiService from './services/apiService';
-import { type MatchPrediction, type LiveMatchPrediction, type BankrollState, type UserBet, type TicketSelection, type FilterState, ConfidenceTier } from './types';
+import * as websocketService from './services/websocketService';
+import { type MatchPrediction, type LiveMatchPrediction, type BankrollState, type UserBet, type TicketSelection, type FilterState, type UserSettings, ConfidenceTier } from './types';
 
 const App: React.FC = () => {
     const [predictions, setPredictions] = useState<MatchPrediction[]>([]);
@@ -22,13 +26,26 @@ const App: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedPrediction, setSelectedPrediction] = useState<MatchPrediction | null>(null);
+    const [liveBetToTrack, setLiveBetToTrack] = useState<UserBet | null>(null);
     const [ticketSelections, setTicketSelections] = useState<TicketSelection[]>([]);
     const [filters, setFilters] = useState<FilterState>({
+        sport: 'All',
         league: 'All',
+        marketType: 'All',
         confidence: 'All',
         sortBy: 'matchDate',
     });
+    const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+    const [showBanner, setShowBanner] = useState(false);
 
+    // Check for banner dismissal on initial load
+    useEffect(() => {
+        const bannerDismissed = localStorage.getItem('rgBannerDismissed');
+        if (!bannerDismissed) {
+            setShowBanner(true);
+        }
+    }, []);
 
     // Fetch initial data from the new API service
     useEffect(() => {
@@ -42,6 +59,11 @@ const App: React.FC = () => {
                 setLivePredictions(data.liveMatches);
                 setBankroll(data.bankroll);
                 setUserBets(data.userBets);
+                setUserSettings(data.userSettings);
+
+                // Initialize the real-time odds feed with all matches
+                websocketService.initializeFeed([...data.liveMatches, ...data.predictions]);
+
             } catch (err) {
                 if (err instanceof Error) {
                     setError(err.message);
@@ -60,9 +82,19 @@ const App: React.FC = () => {
     useEffect(() => {
         let processedPredictions = [...predictions];
 
+        // Filter by sport
+        if (filters.sport !== 'All') {
+            processedPredictions = processedPredictions.filter(p => p.sport === filters.sport);
+        }
+
         // Filter by league
         if (filters.league !== 'All') {
             processedPredictions = processedPredictions.filter(p => p.league === filters.league);
+        }
+
+        // Filter by market type
+        if (filters.marketType !== 'All') {
+            processedPredictions = processedPredictions.filter(p => p.marketType === filters.marketType);
         }
 
         // Filter by confidence
@@ -112,9 +144,26 @@ const App: React.FC = () => {
             setSelectedPrediction(null); // Close modal after placing bet
             setTicketSelections([]); // Clear ticket after placing bet
         } catch (err) {
-             setError("Failed to place bet.");
+            if (err instanceof Error) {
+                alert(`Bet Rejected: ${err.message}`);
+            } else {
+                 setError("Failed to place bet.");
+            }
         }
     }, [bankroll]);
+    
+    const handleCashOutBet = useCallback(async (betId: string, cashOutValue: number) => {
+        try {
+            const { updatedBankroll, cashedOutBet } = await apiService.cashOutBet(betId, cashOutValue);
+            setBankroll(updatedBankroll);
+            setUserBets(prevBets => 
+                prevBets.map(b => b.id === cashedOutBet.id ? cashedOutBet : b)
+            );
+            setLiveBetToTrack(null); // Close modal on success
+        } catch (err) {
+            setError("Failed to process cash out.");
+        }
+    }, []);
     
     // Simulate settling of pending bets
     useEffect(() => {
@@ -152,36 +201,80 @@ const App: React.FC = () => {
 
     const handleAddToTicket = (prediction: TicketSelection) => {
         // Prevent adding the same match prediction twice
-        if (!ticketSelections.some(s => s.teamA === prediction.teamA && s.teamB === prediction.teamB)) {
+        if (!ticketSelections.some(s => s.id === prediction.id)) {
              setTicketSelections(prev => [...prev, prediction]);
         }
     };
     
     const handleRemoveFromTicket = (prediction: TicketSelection) => {
-        setTicketSelections(prev => prev.filter(s => s.teamA !== prediction.teamA || s.teamB !== prediction.teamB));
+        setTicketSelections(prev => prev.filter(s => s.id !== prediction.id));
     };
 
     const handleClearTicket = () => {
         setTicketSelections([]);
     };
 
-    const uniqueLeagues = useMemo(() => {
-        const leagues = new Set(predictions.map(p => p.league));
-        return ['All', ...Array.from(leagues)];
+    const handleSaveSettings = async (newSettings: UserSettings) => {
+        try {
+            const updatedSettings = await apiService.updateUserSettings(newSettings);
+            setUserSettings(updatedSettings);
+            setIsSettingsModalOpen(false);
+        } catch (error) {
+            setError("Failed to save settings.");
+        }
+    };
+    
+    const handleDismissBanner = () => {
+        setShowBanner(false);
+        localStorage.setItem('rgBannerDismissed', 'true');
+    };
+    
+    const handleTrackLiveBet = (bet: UserBet) => {
+        setLiveBetToTrack(bet);
+    }
+
+    const sportsAndLeagues = useMemo(() => {
+        const structure: Record<string, Set<string>> = {};
+        predictions.forEach(p => {
+            if (!structure[p.sport]) {
+                structure[p.sport] = new Set();
+            }
+            structure[p.sport].add(p.league);
+        });
+        const finalStructure: Record<string, string[]> = {};
+        for (const sport in structure) {
+            finalStructure[sport] = Array.from(structure[sport]).sort();
+        }
+        return finalStructure;
     }, [predictions]);
+
+    const marketTypes = useMemo(() => {
+        const types = new Set(predictions.map(p => p.marketType));
+        return ['All', ...Array.from(types).sort()];
+    }, [predictions]);
+
+    const liveMatchIds = useMemo(() => {
+        return new Set(livePredictions.map(p => p.id));
+    }, [livePredictions]);
 
     return (
         <div className="bg-brand-bg-dark min-h-screen font-sans text-brand-text-primary">
-            <Header />
+            <Header onOpenSettings={() => setIsSettingsModalOpen(true)} />
+             {showBanner && <ResponsibleGamblingBanner onDismiss={handleDismissBanner} onOpenSettings={() => setIsSettingsModalOpen(true)} />}
+
             <main className="container mx-auto px-4 py-8">
-                <BankrollManager bankroll={bankroll} onSetInitialBankroll={handleSetInitialBankroll} />
+                <BankrollManager 
+                    bankroll={bankroll} 
+                    userBets={userBets} 
+                    onSetInitialBankroll={handleSetInitialBankroll} 
+                />
 
                 {isLoading && <LoadingSpinner />}
                 {error && <ErrorDisplay message={error} />}
 
                 {!isLoading && !error && (
                     <>
-                        {userBets.length > 0 && <MyBets bets={userBets} />}
+                        {userBets.length > 0 && <MyBets bets={userBets} onTrackLiveBet={handleTrackLiveBet} liveMatchIds={liveMatchIds} />}
 
                         {livePredictions.length > 0 && (
                              <section className="mb-12">
@@ -199,20 +292,21 @@ const App: React.FC = () => {
                                         Pre-Match AI Advisor
                                     </h2>
                                     <FilterBar
-                                        leagues={uniqueLeagues}
+                                        sportsAndLeagues={sportsAndLeagues}
+                                        marketTypes={marketTypes}
                                         filters={filters}
                                         onFilterChange={setFilters}
                                     />
                                 </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                    {filteredPredictions.map((p, i) => (
+                                    {filteredPredictions.map((p) => (
                                         <MatchCard 
-                                            key={`${p.teamA}-${p.teamB}-${i}`}
+                                            key={p.id}
                                             prediction={p} 
                                             onViewAnalysis={() => handleViewAnalysis(p)}
                                             onAddToTicket={() => handleAddToTicket(p)}
-                                            isTicketed={ticketSelections.some(s => s.teamA === p.teamA && s.teamB === p.teamB)}
+                                            isTicketed={ticketSelections.some(s => s.id === p.id)}
                                         />
                                     ))}
                                 </div>
@@ -228,23 +322,42 @@ const App: React.FC = () => {
                 )}
             </main>
             
-            {selectedPrediction && bankroll && (
+            {selectedPrediction && bankroll && userSettings && (
                 <PredictionModal 
                     prediction={selectedPrediction} 
                     onClose={handleCloseModal}
                     onPlaceBet={(prediction, stake) => handlePlaceBet(prediction, stake)}
-                    bankroll={bankroll.current}
+                    bankrollState={bankroll}
+                    userSettings={userSettings}
+                />
+            )}
+            
+            {liveBetToTrack && (
+                <LiveBetModal
+                    bet={liveBetToTrack}
+                    onClose={() => setLiveBetToTrack(null)}
+                    onCashOut={handleCashOutBet}
                 />
             )}
 
-            {bankroll && (
+            {bankroll && userSettings && (
                  <TicketBuilder 
                     selections={ticketSelections}
                     onRemove={handleRemoveFromTicket}
                     onClear={handleClearTicket}
                     onPlaceBet={handlePlaceBet}
-                    bankroll={bankroll.current}
+                    bankrollState={bankroll}
+                    userSettings={userSettings}
                  />
+            )}
+
+            {isSettingsModalOpen && userSettings && (
+                <SettingsModal 
+                    isOpen={isSettingsModalOpen}
+                    onClose={() => setIsSettingsModalOpen(false)}
+                    onSave={handleSaveSettings}
+                    currentSettings={userSettings}
+                />
             )}
 
             <AiChat predictions={filteredPredictions} />

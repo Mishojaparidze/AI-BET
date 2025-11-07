@@ -1,5 +1,3 @@
-// Fix: Removed circular import from './types' and all implementation code. This file should only contain type definitions.
-
 export enum ConfidenceTier {
     High = 'High',
     Medium = 'Medium',
@@ -16,6 +14,48 @@ export enum RiskLevel {
     Conservative = 'Conservative',
     Moderate = 'Moderate',
     Aggressive = 'Aggressive',
+}
+
+export enum Sentiment {
+    Positive = 'Positive',
+    Negative = 'Negative',
+    Neutral = 'Neutral',
+}
+
+export enum DataSourceStatus {
+    Live = 'Live',
+    PreMatch = 'Pre-Match',
+    Error = 'Error',
+}
+
+export type GameEventType = 'Key Score' | 'Discipline' | 'Turnover' | 'Injury' | 'Pace Change' | 'Key Performer';
+
+export interface GameScenario {
+    narrative: string;
+    scorePrediction?: string;
+    keyEvents: {
+        eventType: GameEventType;
+        likelihood: 'High' | 'Medium' | 'Low';
+        description: string;
+    }[];
+}
+
+export interface DataSourceMetric {
+    name: string;
+    value: string;
+}
+
+export interface DataSource {
+    category: string;
+    provider: string;
+    status: DataSourceStatus;
+    metrics: DataSourceMetric[];
+}
+
+export interface SentimentAnalysis {
+    overallSentiment: Sentiment;
+    newsSummary: string;
+    socialMediaKeywords: string[];
 }
 
 export interface AIDecisionFlowStep {
@@ -41,22 +81,42 @@ export interface AIAnalysis {
     };
     riskLevel: RiskLevel;
     decisionFlow: AIDecisionFlowStep[];
+    sentimentAnalysis: SentimentAnalysis;
+    dataSources: DataSource[];
+    formAnalysis: { 
+        teamA: string; 
+        teamB: string; 
+    };
+    playerAnalysis: { 
+        name: string;
+        team: 'A' | 'B';
+        impact: string;
+    }[];
+    bettingAngle: string;
+    gameScenario: GameScenario;
 }
 
 export interface MatchPrediction {
+    id: string;
+    sport: string; 
     teamA: string;
+    teamAId: number;
     teamB: string;
+    teamBId: number;
     league: string;
     matchDate: string;
     prediction: string;
+    marketType: string;
     confidence: ConfidenceTier;
     odds: number;
     reasoning: string;
     aiAnalysis: AIAnalysis;
+    stadium?: string;
+    referee?: string;
+    attendance?: number;
 }
 
 export interface LiveMatchPrediction extends MatchPrediction {
-    id: number;
     scoreA: number;
     scoreB: number;
     matchTime: number;
@@ -70,11 +130,29 @@ export interface LiveMatchPrediction extends MatchPrediction {
     hasValueAlert: boolean;
 }
 
+export interface HeadToHeadFixture {
+    fixtureId: number;
+    date: string;
+    homeTeam: string;
+    awayTeam: string;
+    goals: {
+        home: number | null;
+        away: number | null;
+    };
+}
+
+
+export interface UserSettings {
+    maxStakePerBet: number;
+    maxDailyStake: number;
+}
+
 export interface BankrollState {
     initial: number;
     current: number;
     totalWagered: number;
     totalReturned: number;
+    dailyWagered: number;
 }
 
 export interface UserBet {
@@ -82,10 +160,11 @@ export interface UserBet {
     match: MatchPrediction;
     stake: number;
     odds: number;
-    status: 'pending' | 'won' | 'lost';
+    status: 'pending' | 'won' | 'lost' | 'cashed-out';
     payout: number | null;
     placedAt: Date;
     selections?: MatchPrediction[];
+    cashedOutAmount?: number;
 }
 
 export type TicketSelection = MatchPrediction;
@@ -104,7 +183,9 @@ export interface TicketVariation {
 }
 
 export interface FilterState {
+    sport: string; 
     league: string;
+    marketType: string;
     confidence: ConfidenceTier | 'All';
     sortBy: 'matchDate' | 'highestOdds' | 'highestEV';
 }

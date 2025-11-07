@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { type LiveMatchPrediction, Momentum } from '../types';
+import { type LiveMatchPrediction, type MatchPrediction } from '../types';
 import { MomentumTracker } from './MomentumTracker';
 import { ValueAlertBadge } from './ValueAlertBadge';
 import * as websocketService from '../services/websocketService';
@@ -14,26 +14,57 @@ const ClockIcon: React.FC<{className?: string}> = ({ className }) => (
     </svg>
 );
 
+const ArrowUpIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline>
+    </svg>
+);
+
+const ArrowDownIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline>
+    </svg>
+);
+
+
 export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({ initialPrediction }) => {
   const [prediction, setPrediction] = useState<LiveMatchPrediction>(initialPrediction);
+  const [oddsMovement, setOddsMovement] = useState<'up' | 'down' | 'none'>('none');
+
 
   useEffect(() => {
-    // Connect to the WebSocket service for this specific match
-    const handleUpdate = (updatedPrediction: LiveMatchPrediction) => {
-        setPrediction(updatedPrediction);
+    let timeoutId: number;
+    const handleUpdate = (updatedPrediction: MatchPrediction | LiveMatchPrediction) => {
+        if (!('liveOdds' in updatedPrediction)) return;
+
+        setPrediction(prev => {
+            if (updatedPrediction.liveOdds > prev.liveOdds) {
+                setOddsMovement('up');
+            } else if (updatedPrediction.liveOdds < prev.liveOdds) {
+                setOddsMovement('down');
+            }
+            
+            clearTimeout(timeoutId);
+            timeoutId = window.setTimeout(() => setOddsMovement('none'), 1500);
+
+            return updatedPrediction;
+        });
     };
     
-    websocketService.connectToMatch(initialPrediction.id, initialPrediction, handleUpdate);
+    websocketService.subscribe(initialPrediction.id, handleUpdate);
 
-    // Disconnect when the component unmounts
     return () => {
-        websocketService.disconnectFromMatch(initialPrediction.id);
+        websocketService.unsubscribe(initialPrediction.id, handleUpdate);
+        clearTimeout(timeoutId);
     };
-  }, [initialPrediction.id]); // Re-connect if the match ID were to change
+  }, [initialPrediction.id]);
 
 
   const { teamA, teamB, scoreA, scoreB, matchTime, league, matchDate, momentum, liveOdds, cashOutRecommendation, hasValueAlert } = prediction;
   
+  const oddsColor = oddsMovement === 'up' ? 'text-brand-green' : oddsMovement === 'down' ? 'text-brand-red' : 'text-brand-text-primary';
+  const movementClass = oddsMovement !== 'none' ? 'animate-pulse' : '';
+
   return (
     <div className="bg-brand-bg-light border-2 border-brand-green/50 rounded-xl shadow-lg shadow-brand-green/10 flex flex-col p-6 space-y-4 relative overflow-hidden">
        <div className="absolute top-2 right-2 text-xs uppercase font-bold text-brand-green bg-brand-green/10 px-2 py-1 rounded-full animate-pulse">
@@ -72,7 +103,11 @@ export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({ initialPrediction 
                 <p className="text-sm text-brand-text-secondary">Live Odds</p>
                 {hasValueAlert && <ValueAlertBadge />}
             </div>
-            <p className="text-3xl font-black text-brand-text-primary mt-1">{liveOdds.toFixed(2)}</p>
+             <div className={`flex items-center justify-end gap-2 transition-colors duration-300 mt-1 ${oddsColor} ${movementClass}`}>
+                {oddsMovement === 'up' && <ArrowUpIcon className="w-5 h-5" />}
+                {oddsMovement === 'down' && <ArrowDownIcon className="w-5 h-5" />}
+                <p className="text-3xl font-black">{liveOdds.toFixed(2)}</p>
+            </div>
             <p className="text-xs text-brand-text-secondary mt-1">{prediction.prediction}</p>
         </div>
          <div className="bg-brand-bg-dark rounded-lg p-4 text-center flex flex-col justify-center items-center">

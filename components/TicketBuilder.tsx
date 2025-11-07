@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { type TicketSelection, type MatchPrediction, type TicketVariation } from '../types';
+import { type TicketSelection, type MatchPrediction, type TicketVariation, type BankrollState, type UserSettings } from '../types';
 import * as apiService from '../services/apiService';
 import { TicketVariationCard } from './TicketVariationCard';
 
@@ -30,12 +30,13 @@ interface TicketBuilderProps {
     onRemove: (selection: TicketSelection) => void;
     onClear: () => void;
     onPlaceBet: (prediction: MatchPrediction, stake: number, selections?: MatchPrediction[]) => void;
-    bankroll: number;
+    bankrollState: BankrollState;
+    userSettings: UserSettings;
 }
 
 type RiskProfile = 'Conservative' | 'Balanced' | 'Aggressive';
 
-export const TicketBuilder: React.FC<TicketBuilderProps> = ({ selections, onRemove, onClear, onPlaceBet, bankroll }) => {
+export const TicketBuilder: React.FC<TicketBuilderProps> = ({ selections, onRemove, onClear, onPlaceBet, bankrollState, userSettings }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [stake, setStake] = useState('10');
     const [riskProfile, setRiskProfile] = useState<RiskProfile>('Balanced');
@@ -77,13 +78,19 @@ export const TicketBuilder: React.FC<TicketBuilderProps> = ({ selections, onRemo
     
     const handlePlaceVariation = (variation: TicketVariation) => {
         // For multi-bet variations (like singles), we place them one by one.
-        if (variation.bets.length > 1) {
-            variation.bets.forEach(bet => {
-                onPlaceBet(bet.prediction, bet.stake, [bet.prediction]);
+        if (variation.bets.length > 1 && variation.title.includes('Singles')) {
+             variation.bets.forEach(bet => {
+                onPlaceBet(bet.prediction, bet.stake);
             });
-        } else { // For parlays
-            const bet = variation.bets[0];
-            onPlaceBet(bet.prediction, bet.stake, selections);
+        } else { // For parlays or combined tickets
+            const mainPrediction = {
+                ...selections[0], // Base for match details
+                prediction: variation.title,
+                odds: variation.bets.reduce((acc, bet) => acc * bet.prediction.odds, 1),
+                teamA: 'Parlay',
+                teamB: `${selections.length} Legs`
+            };
+            onPlaceBet(mainPrediction, variation.totalStake, selections);
         }
         setIsOpen(false);
         onClear();
@@ -169,7 +176,8 @@ export const TicketBuilder: React.FC<TicketBuilderProps> = ({ selections, onRemo
                                         key={i} 
                                         variation={ticket}
                                         onPlaceBet={() => handlePlaceVariation(ticket)}
-                                        bankroll={bankroll}
+                                        bankrollState={bankrollState}
+                                        userSettings={userSettings}
                                     />
                                 ))}
                             </div>
@@ -214,7 +222,7 @@ export const TicketBuilder: React.FC<TicketBuilderProps> = ({ selections, onRemo
                         </div>
                         <button
                             onClick={handleGenerate}
-                            disabled={parseFloat(stake) <= 0 || parseFloat(stake) > bankroll}
+                            disabled={parseFloat(stake) <= 0 || parseFloat(stake) > bankrollState.current}
                             className="w-full flex items-center justify-center px-6 py-3 bg-brand-green text-brand-bg-dark font-bold rounded-lg transition-colors duration-300 hover:bg-brand-green/80 disabled:bg-brand-border disabled:text-brand-text-secondary disabled:cursor-not-allowed"
                         >
                             <SparklesIcon className="w-5 h-5 mr-2" />
