@@ -116,7 +116,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({ prediction, onViewAnalysis
             }
             
             clearTimeout(timeoutId);
-            timeoutId = window.setTimeout(() => setOddsMovement('none'), 1500);
+            timeoutId = window.setTimeout(() => setOddsMovement('none'), 2000);
 
             return updatedPrediction;
         });
@@ -132,8 +132,16 @@ export const MatchCard: React.FC<MatchCardProps> = ({ prediction, onViewAnalysis
 
   const { teamA, teamB, league, matchDate, prediction: bet, confidence, odds, aiAnalysis, reasoning, stadium, referee, attendance } = currentPrediction;
 
-  const oddsColor = oddsMovement === 'up' ? 'text-brand-green' : oddsMovement === 'down' ? 'text-brand-red' : 'text-brand-text-primary';
-  const movementClass = oddsMovement !== 'none' ? 'animate-pulse' : '';
+  const getMovementIndicatorClasses = () => {
+    switch (oddsMovement) {
+        case 'up':
+            return 'bg-brand-green/20 text-brand-green';
+        case 'down':
+            return 'bg-brand-red/20 text-brand-red';
+        default:
+            return 'bg-transparent text-brand-text-primary';
+    }
+  };
 
   return (
     <div className="bg-brand-bg-light rounded-xl shadow-md overflow-hidden border border-brand-border flex flex-col justify-between transition-all duration-300 hover:shadow-lg hover:border-brand-green/50 hover:-translate-y-1">
@@ -160,7 +168,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({ prediction, onViewAnalysis
                 </div>
                 <div className="text-right">
                      <p className="text-xs text-brand-text-secondary">Odds</p>
-                     <div className={`flex items-center justify-end gap-2 transition-colors duration-300 ${oddsColor} ${movementClass}`}>
+                     <div className={`flex items-center justify-end gap-2 p-1 -m-1 rounded-md transition-all duration-500 ${getMovementIndicatorClasses()}`}>
                         {oddsMovement === 'up' && <ArrowUpIcon className="w-4 h-4" />}
                         {oddsMovement === 'down' && <ArrowDownIcon className="w-4 h-4" />}
                         <p className="text-2xl font-black">{odds.toFixed(2)}</p>
@@ -189,7 +197,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({ prediction, onViewAnalysis
                         <div>
                             <p className="font-semibold text-brand-green text-xs mb-1">Positives</p>
                             <ul className="space-y-1">
-                                {aiAnalysis.keyPositives.slice(0, 2).map((factor, i) => {
+                                {aiAnalysis.keyPositives.slice(0, 5).map((factor, i) => {
                                     const isImpactful = i === 0;
                                     return (
                                          <li key={i} className="flex items-start text-xs">
@@ -199,7 +207,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({ prediction, onViewAnalysis
                                                 <CheckCircleIcon className="w-3 h-3 mr-1.5 mt-0.5 text-brand-green flex-shrink-0"/>
                                             )}
                                             <span 
-                                                className={`truncate ${isImpactful ? 'font-bold text-brand-text-primary' : 'text-brand-text-secondary'}`} 
+                                                className={` ${isImpactful ? 'font-bold text-brand-text-primary' : 'text-brand-text-secondary'}`} 
                                                 title={factor}
                                             >
                                                 {factor}
@@ -212,7 +220,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({ prediction, onViewAnalysis
                         <div>
                             <p className="font-semibold text-brand-red text-xs mb-1">Negatives</p>
                             <ul className="space-y-1">
-                                {aiAnalysis.keyNegatives.slice(0, 2).map((factor, i) => {
+                                {aiAnalysis.keyNegatives.slice(0, 5).map((factor, i) => {
                                     const isImpactful = i === 0;
                                     return (
                                         <li key={i} className="flex items-start text-xs">
@@ -222,7 +230,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({ prediction, onViewAnalysis
                                                 <XCircleIcon className="w-3 h-3 mr-1.5 mt-0.5 text-brand-red flex-shrink-0"/>
                                             )}
                                             <span
-                                                className={`truncate ${isImpactful ? 'font-bold text-brand-text-primary' : 'text-brand-text-secondary'}`}
+                                                className={` ${isImpactful ? 'font-bold text-brand-text-primary' : 'text-brand-text-secondary'}`}
                                                 title={factor}
                                             >
                                                 {factor}

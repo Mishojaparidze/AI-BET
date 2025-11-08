@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { type LiveMatchPrediction, type MatchPrediction } from '../types';
 import { MomentumTracker } from './MomentumTracker';
@@ -45,7 +46,7 @@ export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({ initialPrediction 
             }
             
             clearTimeout(timeoutId);
-            timeoutId = window.setTimeout(() => setOddsMovement('none'), 1500);
+            timeoutId = window.setTimeout(() => setOddsMovement('none'), 2000);
 
             return updatedPrediction;
         });
@@ -62,8 +63,16 @@ export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({ initialPrediction 
 
   const { teamA, teamB, scoreA, scoreB, matchTime, league, matchDate, momentum, liveOdds, cashOutRecommendation, hasValueAlert } = prediction;
   
-  const oddsColor = oddsMovement === 'up' ? 'text-brand-green' : oddsMovement === 'down' ? 'text-brand-red' : 'text-brand-text-primary';
-  const movementClass = oddsMovement !== 'none' ? 'animate-pulse' : '';
+  const getMovementIndicatorClasses = () => {
+    switch (oddsMovement) {
+        case 'up':
+            return 'bg-brand-green/20 text-brand-green';
+        case 'down':
+            return 'bg-brand-red/20 text-brand-red';
+        default:
+            return 'bg-transparent text-brand-text-primary';
+    }
+  };
 
   return (
     <div className="bg-brand-bg-light border-2 border-brand-green/50 rounded-xl shadow-lg shadow-brand-green/10 flex flex-col p-6 space-y-4 relative overflow-hidden">
@@ -103,7 +112,7 @@ export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({ initialPrediction 
                 <p className="text-sm text-brand-text-secondary">Live Odds</p>
                 {hasValueAlert && <ValueAlertBadge />}
             </div>
-             <div className={`flex items-center justify-end gap-2 transition-colors duration-300 mt-1 ${oddsColor} ${movementClass}`}>
+             <div className={`flex items-center justify-center gap-2 p-1 -m-1 rounded-md transition-all duration-500 mt-1 ${getMovementIndicatorClasses()}`}>
                 {oddsMovement === 'up' && <ArrowUpIcon className="w-5 h-5" />}
                 {oddsMovement === 'down' && <ArrowDownIcon className="w-5 h-5" />}
                 <p className="text-3xl font-black">{liveOdds.toFixed(2)}</p>

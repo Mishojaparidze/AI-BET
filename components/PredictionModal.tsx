@@ -74,6 +74,64 @@ const ZapIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
 );
 
+const TrendingUpIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>
+    </svg>
+);
+
+const TrendingDownIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>
+    </svg>
+);
+
+const CalendarIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+    </svg>
+);
+
+const DatabaseIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+);
+
+const MessageSquareIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+);
+
+const CalculatorIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="12" y1="10" x2="12" y2="18"/><line x1="8" y1="14" x2="16" y2="14"/></svg>
+);
+
+const CpuIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+);
+
+const TagIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+);
+
+const ScaleIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path><path d="M12 22V12"></path></svg>
+);
+
+const DollarSignIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+);
+
+const HistoryIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+);
+
+const ShieldCheckIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+);
+
+const LayersIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+);
+
 
 interface PredictionModalProps {
     prediction: MatchPrediction;
@@ -242,6 +300,10 @@ export const PredictionModal: React.FC<PredictionModalProps> = ({ prediction, ba
         }
     };
 
+    // Derived values for the new calculation section
+    const impliedProbability = 1 / odds;
+    const identifiedEdge = aiAnalysis.estimatedWinProbability - impliedProbability;
+
     return (
         <div 
             className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in"
@@ -337,6 +399,39 @@ export const PredictionModal: React.FC<PredictionModalProps> = ({ prediction, ba
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Statistical Profile */}
+                                    {aiAnalysis.statisticalProfile && (
+                                        <div>
+                                            <h4 className="text-sm font-bold text-brand-text-secondary mb-3">Statistical Profile</h4>
+                                            <div className="bg-brand-bg-light p-4 rounded-lg space-y-3">
+                                                <div className="grid grid-cols-3 gap-2 text-center text-xs text-brand-text-secondary">
+                                                    <div></div> {/* Spacer */}
+                                                    <div className="font-bold text-brand-text-primary truncate">{teamA}</div>
+                                                    <div className="font-bold text-brand-text-primary truncate">{teamB}</div>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-3 gap-2 items-center">
+                                                    <div className="flex items-center text-sm text-brand-text-secondary"><TrendingUpIcon className="w-4 h-4 mr-2 text-brand-green"/>Avg. Score For</div>
+                                                    <div className="text-center font-bold text-lg text-brand-text-primary bg-brand-bg-dark py-1 rounded-md">{aiAnalysis.statisticalProfile.teamA.avgGoalsScored.toFixed(1)}</div>
+                                                    <div className="text-center font-bold text-lg text-brand-text-primary bg-brand-bg-dark py-1 rounded-md">{aiAnalysis.statisticalProfile.teamB.avgGoalsScored.toFixed(1)}</div>
+                                                </div>
+
+                                                <div className="grid grid-cols-3 gap-2 items-center">
+                                                    <div className="flex items-center text-sm text-brand-text-secondary"><TrendingDownIcon className="w-4 h-4 mr-2 text-brand-red"/>Avg. Score Against</div>
+                                                    <div className="text-center font-bold text-lg text-brand-text-primary bg-brand-bg-dark py-1 rounded-md">{aiAnalysis.statisticalProfile.teamA.avgGoalsConceded.toFixed(1)}</div>
+                                                    <div className="text-center font-bold text-lg text-brand-text-primary bg-brand-bg-dark py-1 rounded-md">{aiAnalysis.statisticalProfile.teamB.avgGoalsConceded.toFixed(1)}</div>
+                                                </div>
+
+                                                <div className="grid grid-cols-3 gap-2 items-center">
+                                                    <div className="flex items-center text-sm text-brand-text-secondary"><CalendarIcon className="w-4 h-4 mr-2"/>Rest Days</div>
+                                                    <div className="text-center font-bold text-lg text-brand-text-primary bg-brand-bg-dark py-1 rounded-md">{aiAnalysis.statisticalProfile.teamA.daysSinceLastMatch}</div>
+                                                    <div className="text-center font-bold text-lg text-brand-text-primary bg-brand-bg-dark py-1 rounded-md">{aiAnalysis.statisticalProfile.teamB.daysSinceLastMatch}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Form & Key Players */}
                                     <div>
                                         <h4 className="text-sm font-bold text-brand-text-secondary mb-3">Form & Key Players</h4>
@@ -475,6 +570,100 @@ export const PredictionModal: React.FC<PredictionModalProps> = ({ prediction, ba
                                             <LiveIntelligenceFeed sources={aiAnalysis.dataSources} />
                                         </div>
                                     </div>
+                                    <div className="mt-4 pt-4 border-t border-brand-border">
+                                        <h4 className="text-sm font-bold text-brand-text-secondary mb-3">Value & Staking Calculation</h4>
+                                        <div className="bg-brand-bg-light p-4 rounded-lg space-y-4">
+                                            <div className="flex items-start gap-4">
+                                                <CalculatorIcon className="w-8 h-8 text-brand-green flex-shrink-0 mt-1" />
+                                                <div>
+                                                    <h5 className="font-bold text-brand-text-primary">Betting Logic Breakdown</h5>
+                                                    <p className="text-xs text-brand-text-secondary">The AI recommends bets only when there is a positive Expected Value (EV), meaning the model has found an edge over the bookmaker's odds.</p>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-3 pt-3 border-t border-brand-border/50">
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <div className="flex items-center text-brand-text-secondary"><CpuIcon className="w-4 h-4 mr-2" />AI Estimated Probability</div>
+                                                    <div className="font-bold text-brand-text-primary bg-brand-bg-dark px-2 py-1 rounded-md">{(aiAnalysis.estimatedWinProbability * 100).toFixed(1)}%</div>
+                                                </div>
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <div className="flex items-center text-brand-text-secondary"><TagIcon className="w-4 h-4 mr-2" />Implied Probability (Odds)</div>
+                                                    <div className="font-bold text-brand-text-primary bg-brand-bg-dark px-2 py-1 rounded-md">{(impliedProbability * 100).toFixed(1)}%</div>
+                                                </div>
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <div className="flex items-center text-brand-text-secondary"><ScaleIcon className="w-4 h-4 mr-2" />Identified Edge</div>
+                                                    <div className={`font-bold px-2 py-1 rounded-md ${identifiedEdge > 0 ? 'text-brand-green bg-brand-green/10' : 'text-brand-red bg-brand-red/10'}`}>{identifiedEdge > 0 ? '+' : ''}{(identifiedEdge * 100).toFixed(1)}%</div>
+                                                </div>
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <div className="flex items-center text-brand-text-secondary"><TrendingUpIcon className="w-4 h-4 mr-2" />Expected Value (EV)</div>
+                                                    <div className="font-bold text-brand-green bg-brand-green/10 px-2 py-1 rounded-md">+{aiAnalysis.expectedValue.toFixed(1)}%</div>
+                                                </div>
+                                                 <div className="flex items-center justify-between text-sm">
+                                                    <div className="flex items-center text-brand-text-secondary"><DollarSignIcon className="w-4 h-4 mr-2" />Kelly Stake Suggestion</div>
+                                                    <div className="font-bold text-brand-yellow bg-brand-yellow/10 px-2 py-1 rounded-md">{aiAnalysis.kellyStakePercentage.toFixed(1)}%</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t border-brand-border">
+                                        <h4 className="text-sm font-bold text-brand-text-secondary mb-3">Prediction Model Architecture</h4>
+                                        <div className="bg-brand-bg-light p-4 rounded-lg space-y-4">
+                                            <div className="flex items-start gap-4">
+                                                <DatabaseIcon className="w-8 h-8 text-brand-green flex-shrink-0 mt-1" />
+                                                <div>
+                                                    <h5 className="font-bold text-brand-text-primary">Quantitative Prediction Engine</h5>
+                                                    <p className="text-xs text-brand-text-secondary">Core predictions (e.g., win probability, EV, confidence) are generated by a suite of trained machine learning models (like Gradient Boosting, Neural Networks) that analyze historical and real-time statistical data. This is the data-driven brain of the operation.</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start gap-4">
+                                                <MessageSquareIcon className="w-8 h-8 text-sky-400 flex-shrink-0 mt-1" />
+                                                <div>
+                                                    <h5 className="font-bold text-brand-text-primary">Natural Language Layer (LLM)</h5>
+                                                    <p className="text-xs text-brand-text-secondary">The LLM (Gemini) does <span className="font-bold">not</span> make quantitative predictions. Its role is to interpret the data from the prediction engine, provide textual summaries (like "AI's Angle"), and power the AI Chat for a conversational experience.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <Accordion title="System Architecture & Principles">
+                                        <div className="space-y-6">
+                                            <div>
+                                                <h4 className="text-sm font-bold text-brand-text-secondary mb-3">Validation & Backtesting</h4>
+                                                <div className="bg-brand-bg-light p-4 rounded-lg flex items-start gap-4">
+                                                    <HistoryIcon className="w-10 h-10 text-brand-green flex-shrink-0 mt-1" />
+                                                    <div>
+                                                        <h5 className="font-bold text-brand-text-primary">Walk-Forward Validation</h5>
+                                                        <p className="text-xs text-brand-text-secondary">The model's performance is continuously validated using a rigorous walk-forward backtesting process on historical data. This simulates real-world performance by training on past data and testing on future, unseen data, ensuring the model's edge is robust and not a result of overfitting.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                             <div>
+                                                <h4 className="text-sm font-bold text-brand-text-secondary mb-3">Core Principles</h4>
+                                                <div className="bg-brand-bg-light p-4 rounded-lg space-y-3">
+                                                    <div className="flex items-start gap-3">
+                                                        <ShieldCheckIcon className="w-5 h-5 text-brand-green flex-shrink-0 mt-0.5" />
+                                                        <p className="text-xs text-brand-text-secondary"><strong className="text-brand-text-primary">Focus on Expected Value (EV):</strong> We only recommend bets where our model finds a positive long-term edge over the market.</p>
+                                                    </div>
+                                                     <div className="flex items-start gap-3">
+                                                        <ShieldCheckIcon className="w-5 h-5 text-brand-green flex-shrink-0 mt-0.5" />
+                                                        <p className="text-xs text-brand-text-secondary"><strong className="text-brand-text-primary">Dynamic Staking:</strong> Bet sizing is determined by the Kelly Criterion to optimize bankroll growth and manage risk.</p>
+                                                    </div>
+                                                     <div className="flex items-start gap-3">
+                                                        <ShieldCheckIcon className="w-5 h-5 text-brand-green flex-shrink-0 mt-0.5" />
+                                                        <p className="text-xs text-brand-text-secondary"><strong className="text-brand-text-primary">Closing Line Value (CLV):</strong> We track our performance against the market's closing odds to ensure our edge is consistent.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                             <div>
+                                                <h4 className="text-sm font-bold text-brand-text-secondary mb-3">System Architecture</h4>
+                                                <div className="bg-brand-bg-light p-4 rounded-lg flex items-start gap-4">
+                                                    <LayersIcon className="w-10 h-10 text-brand-green flex-shrink-0 mt-1" />
+                                                    <div>
+                                                        <h5 className="font-bold text-brand-text-primary">Multi-Layered Architecture</h5>
+                                                        <p className="text-xs text-brand-text-secondary">Our system uses a multi-layered architecture for accuracy. A **Data Layer** (PostgreSQL) feeds a **Quantitative Prediction Engine** (Python/ML) which handles all statistical modeling. The **Gemini API** is used only as a **Natural Language Layer** to interpret and communicate these data-driven insights through the **Frontend**.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Accordion>
                                 </div>
                              </Accordion>
 

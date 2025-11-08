@@ -1,3 +1,4 @@
+// types.ts
 export enum ConfidenceTier {
     High = 'High',
     Medium = 'Medium',
@@ -33,7 +34,8 @@ export type GameEventType = 'Key Score' | 'Discipline' | 'Turnover' | 'Injury' |
 export interface GameScenario {
     narrative: string;
     scorePrediction?: string;
-    keyEvents: {
+    // FIX: Use readonly array to match 'as const' inference from apiService.ts
+    keyEvents: readonly {
         eventType: GameEventType;
         likelihood: 'High' | 'Medium' | 'Low';
         description: string;
@@ -49,13 +51,15 @@ export interface DataSource {
     category: string;
     provider: string;
     status: DataSourceStatus;
-    metrics: DataSourceMetric[];
+    // FIX: Use readonly array to match 'as const' inference from apiService.ts
+    metrics: readonly DataSourceMetric[];
 }
 
 export interface SentimentAnalysis {
     overallSentiment: Sentiment;
     newsSummary: string;
-    socialMediaKeywords: string[];
+    // FIX: Use readonly array to match 'as const' inference from apiService.ts
+    socialMediaKeywords: readonly string[];
 }
 
 export interface AIDecisionFlowStep {
@@ -65,14 +69,18 @@ export interface AIDecisionFlowStep {
 }
 
 export interface AIAnalysis {
-    keyPositives: string[];
-    keyNegatives: string[];
-    confidenceBreakdown: {
+    // FIX: Use readonly array to match 'as const' inference from apiService.ts
+    keyPositives: readonly string[];
+    // FIX: Use readonly array to match 'as const' inference from apiService.ts
+    keyNegatives: readonly string[];
+    // FIX: Use readonly array to match 'as const' inference from apiService.ts
+    confidenceBreakdown: readonly {
         model: string;
         weight: number;
         color: string;
     }[];
     expectedValue: number;
+    estimatedWinProbability: number;
     kellyStakePercentage: number;
     marketInsights: {
         sharpMoneyAlignment: boolean;
@@ -80,20 +88,35 @@ export interface AIAnalysis {
         significantOddsMovement: boolean;
     };
     riskLevel: RiskLevel;
-    decisionFlow: AIDecisionFlowStep[];
+    // FIX: Use readonly array to match 'as const' inference from apiService.ts
+    decisionFlow: readonly AIDecisionFlowStep[];
     sentimentAnalysis: SentimentAnalysis;
-    dataSources: DataSource[];
+    // FIX: Use readonly array to match 'as const' inference from apiService.ts
+    dataSources: readonly DataSource[];
     formAnalysis: { 
         teamA: string; 
         teamB: string; 
     };
-    playerAnalysis: { 
+    // FIX: Use readonly array to match 'as const' inference from apiService.ts
+    playerAnalysis: readonly { 
         name: string;
         team: 'A' | 'B';
         impact: string;
     }[];
     bettingAngle: string;
     gameScenario: GameScenario;
+    statisticalProfile?: {
+        teamA: {
+            avgGoalsScored: number;
+            avgGoalsConceded: number;
+            daysSinceLastMatch: number;
+        };
+        teamB: {
+            avgGoalsScored: number;
+            avgGoalsConceded: number;
+            daysSinceLastMatch: number;
+        };
+    };
 }
 
 export interface MatchPrediction {

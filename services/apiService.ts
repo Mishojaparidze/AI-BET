@@ -81,8 +81,18 @@ thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
 
 const formatDate = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+// Helper to calculate estimated win probability from EV and odds for data consistency
+const calculateProbFromEV = (evPercentage: number, odds: number): number => {
+  if (odds <= 0) return 0;
+  // Formula derived from EV = (P_win * (Odds - 1)) - (1 - P_win)
+  // P_win = (EV_decimal + 1) / Odds
+  const evDecimal = evPercentage / 100;
+  return (evDecimal + 1) / odds;
+};
+
+
 // DATA REFRESH: Massively expanded the sports and leagues to provide a global feel.
-const mockPredictions: MatchPrediction[] = [
+const rawPredictions = [
     { 
         id: "pl-ars-tot",
         sport: "Soccer",
@@ -115,6 +125,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Discipline', likelihood: 'Medium', description: 'A red card is possible given the rivalry, but not highly probable.' },
                     { eventType: 'Key Score', likelihood: 'High', description: 'A goal from a set-piece situation is highly likely for either team.' },
                 ]
+            },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 2.4, avgGoalsConceded: 0.8, daysSinceLastMatch: 7 },
+                teamB: { avgGoalsScored: 1.9, avgGoalsConceded: 1.4, daysSinceLastMatch: 8 }
             },
             keyPositives: ["Unbeaten in last 8 home games", "Higher xG (Expected Goals) in recent matches", "Key midfielder returning from injury", "Spurs' defensive vulnerabilities on the road"],
             keyNegatives: ["Derby matches are highly unpredictable", "Son Heung-min's excellent record against Arsenal"],
@@ -180,6 +194,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Turnover', likelihood: 'Medium', description: 'Anthony Edwards\' aggressive drives might lead to crucial late-game turnovers.' },
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 114.9, avgGoalsConceded: 109.6, daysSinceLastMatch: 3 },
+                teamB: { avgGoalsScored: 113.0, avgGoalsConceded: 106.5, daysSinceLastMatch: 2 }
+            },
             keyPositives: ["Jokic's high assist-to-turnover ratio", "Strong home-court advantage at altitude", "Experience in playoff situations", "Better team offensive rating"],
             keyNegatives: ["Timberwolves' #1 ranked defense", "Anthony Edwards' explosive scoring ability", "Nuggets' occasional defensive lapses"],
             confidenceBreakdown: [
@@ -241,6 +259,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Performer', likelihood: 'High', description: 'Lamine Yamal is predicted to be a constant threat on the wing for Barcelona.' },
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 2.2, avgGoalsConceded: 0.7, daysSinceLastMatch: 4 },
+                teamB: { avgGoalsScored: 2.1, avgGoalsConceded: 1.1, daysSinceLastMatch: 5 }
+            },
             keyPositives: ["Historically high-scoring fixture", "Both teams average over 2 goals per game", "Elite attacking talent on both sides", "Recent defensive errors from both teams"],
             keyNegatives: ["'Derby' tension can lead to cautious play", "Goalkeepers (Courtois, ter Stegen) are world-class"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 45, color: 'bg-green-500'}, { model: 'LSTM Network', weight: 30, color: 'bg-sky-500'}, { model: 'Graph Network', weight: 15, color: 'bg-purple-500'}, { model: 'Bayesian Net', weight: 10, color: 'bg-amber-500'}],
@@ -295,6 +317,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Pace Change', likelihood: 'High', description: 'The game will be played at a frantic pace, with numerous turnovers.' },
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 2.5, avgGoalsConceded: 1.3, daysSinceLastMatch: 7 },
+                teamB: { avgGoalsScored: 3.1, avgGoalsConceded: 1.2, daysSinceLastMatch: 6 }
+            },
             keyPositives: ["7 of last 8 H2H games had over 3.5 goals", "Both teams are in the top 3 for goals scored", "Bayern averages 3.2 goals/game", "Dortmund's potent home attack"],
             keyNegatives: ["'Derby' pressure can sometimes stifle games", "Both teams possess quality defenders"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 50, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 25, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 15, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 10, color: 'bg-amber-500' }],
@@ -348,6 +374,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Score', likelihood: 'Medium', description: 'A wicket in the first over is possible, but MI is favored to build a solid start.' },
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 185, avgGoalsConceded: 180, daysSinceLastMatch: 3 },
+                teamB: { avgGoalsScored: 175, avgGoalsConceded: 170, daysSinceLastMatch: 4 }
+            },
             keyPositives: ["Rohit Sharma's high strike rate in powerplays", "MI's aggressive opening strategy at home", "CSK's key powerplay bowler has been expensive recently", "Wankhede pitch favors batsmen early on"],
             keyNegatives: ["CSK's disciplined bowling", "An early wicket can change everything in T20s"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 40, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 30, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 20, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 10, color: 'bg-amber-500' }],
@@ -400,6 +430,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Performer', likelihood: 'High', description: 'Antoine Dupont will be directly involved in at least one try.' },
                     { eventType: 'Discipline', likelihood: 'Medium', description: 'A yellow card for either side could be a major turning point.' },
                 ]
+            },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 32.5, avgGoalsConceded: 18.2, daysSinceLastMatch: 14 },
+                teamB: { avgGoalsScored: 34.1, avgGoalsConceded: 15.5, daysSinceLastMatch: 13 }
             },
             keyPositives: ["Powerful and dominant forward pack", "Strong home-field advantage in Paris", "World's best player in Antoine Dupont", "Explosive backline"],
             keyNegatives: ["Ireland's world-class structure and discipline", "Can be prone to moments of ill-discipline"],
@@ -558,6 +592,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Discipline', likelihood: 'Medium', description: 'A red card is a real possibility given the intensity of the rivalry.' },
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 2.8, avgGoalsConceded: 1.1, daysSinceLastMatch: 7 },
+                teamB: { avgGoalsScored: 1.8, avgGoalsConceded: 1.7, daysSinceLastMatch: 7 }
+            },
             keyPositives: ["LAFC's strong home record", "Bouanga's goalscoring form", "H2H is always high-scoring", "Galaxy's defensive weaknesses"],
             keyNegatives: ["Derby matches are unpredictable", "Galaxy's attack is potent"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 40, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 25, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 20, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 15, color: 'bg-amber-500' }],
@@ -610,6 +648,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Performer', likelihood: 'High', description: 'Moustapha Fall is projected to have multiple blocks and alter many shots.' },
                     { eventType: 'Discipline', likelihood: 'High', description: 'Foul trouble for a key player is a significant risk.' },
                 ]
+            },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 78.5, avgGoalsConceded: 74.2, daysSinceLastMatch: 5 },
+                teamB: { avgGoalsScored: 81.3, avgGoalsConceded: 77.1, daysSinceLastMatch: 5 }
             },
             keyPositives: ["#1 vs #3 ranked defenses in EuroLeague", "Historically low-scoring derby", "Both teams play at a slow pace", "High-pressure environment suppresses offense"],
             keyNegatives: ["Both teams have elite offensive players", "A hot shooting night could push the total over"],
@@ -664,6 +706,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Turnover', likelihood: 'Medium', description: 'A crucial interception in the second half could swing the momentum.' }
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 22.5, avgGoalsConceded: 20.6, daysSinceLastMatch: 14 },
+                teamB: { avgGoalsScored: 21.2, avgGoalsConceded: 22.6, daysSinceLastMatch: 14 }
+            },
             keyPositives: ["Strong QB play", "Explosive young receiving corps", "Dominant home-field advantage at Lambeau", "Historical H2H dominance"],
             keyNegatives: ["Inconsistent run defense", "Bears' improved defensive line"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 45, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 25, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 15, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 15, color: 'bg-amber-500' }],
@@ -716,6 +762,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Score', likelihood: 'High', description: 'At least two power-play goals will be scored in the game.' },
                     { eventType: 'Key Performer', likelihood: 'High', description: 'Auston Matthews is projected to have over 4 shots on goal.' }
                 ]
+            },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 3.6, avgGoalsConceded: 3.1, daysSinceLastMatch: 2 },
+                teamB: { avgGoalsScored: 3.4, avgGoalsConceded: 2.7, daysSinceLastMatch: 3 }
             },
             keyPositives: ["Top-5 power plays for both teams", "Elite offensive talent on both rosters", "Recent H2H games have been high-scoring", "Goaltending has been questionable"],
             keyNegatives: ["Playoff intensity can lead to tighter defense", "Bruins' strong defensive system at home"],
@@ -927,6 +977,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Score', likelihood: 'Medium', description: 'A goal from a set-piece could be the decider.' }
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 2.3, avgGoalsConceded: 0.6, daysSinceLastMatch: 8 },
+                teamB: { avgGoalsScored: 2.0, avgGoalsConceded: 1.1, daysSinceLastMatch: 7 }
+            },
             keyPositives: ["6 of last 7 H2H games under 2.5 goals", "Both teams have top-tier defenses in Serie A", "High stakes of the derby promote cautious play", "Strong goalkeeping on both sides"],
             keyNegatives: ["Elite attacking players on both teams can score at any moment", "An early goal could open the game up"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 55, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 20, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 15, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 10, color: 'bg-amber-500' }],
@@ -980,8 +1034,12 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Discipline', likelihood: 'High', description: 'This derby is known for yellow and red cards.' }
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 2.9, avgGoalsConceded: 1.0, daysSinceLastMatch: 6 },
+                teamB: { avgGoalsScored: 1.8, avgGoalsConceded: 1.2, daysSinceLastMatch: 8 }
+            },
             keyPositives: ["PSG's unbeaten home record", "Mbappé's incredible goalscoring form", "Marseille's strong attacking record", "PSG's tendency to concede goals"],
-            keyNegatives: ["Derby matches can be unpredictable", "Marseille's defense can be organized"],
+            keyNegatives: ["Derby matches are unpredictable", "Marseille's defense can be organized"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 40, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 25, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 20, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 15, color: 'bg-amber-500' }],
             expectedValue: 14.8,
             kellyStakePercentage: 3.2,
@@ -1033,6 +1091,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Performer', likelihood: 'High', description: 'Nick Daicos is projected for 30+ disposals.' },
                     { eventType: 'Pace Change', likelihood: 'Medium', description: 'The game will be played at high intensity, with momentum swings in the third quarter.' }
                 ]
+            },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 88.5, avgGoalsConceded: 75.2, daysSinceLastMatch: 9 },
+                teamB: { avgGoalsScored: 82.1, avgGoalsConceded: 80.5, daysSinceLastMatch: 9 }
             },
             keyPositives: ["Dominant midfield", "Higher clearance rate", "Strong home ground advantage at MCG", "More efficient forward line"],
             keyNegatives: ["Essendon's leg speed can be dangerous", "High-pressure nature of ANZAC Day"],
@@ -1243,6 +1305,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Score', likelihood: 'High', description: 'The match-winning points will likely come from the kicking tee.' }
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 28.4, avgGoalsConceded: 12.1, daysSinceLastMatch: 10 },
+                teamB: { avgGoalsScored: 35.8, avgGoalsConceded: 15.4, daysSinceLastMatch: 10 }
+            },
             keyPositives: ["Dominant set-piece (scrum and maul)", "The 'Bomb Squad' impact from the bench", "Unmatched physicality in defense", "Proven ability to win tight knockout games"],
             keyNegatives: ["Less creative in attack than New Zealand", "Can be vulnerable to quick-tempo attacks"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 50, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 20, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 20, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 10, color: 'bg-amber-500' }],
@@ -1295,6 +1361,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Performer', likelihood: 'High', description: 'Both defenses are projected to have multiple sacks.' },
                     { eventType: 'Turnover', likelihood: 'Medium', description: 'A turnover in the red zone will be a massive momentum swing.' }
                 ]
+            },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 37.2, avgGoalsConceded: 17.9, daysSinceLastMatch: 12 },
+                teamB: { avgGoalsScored: 40.1, avgGoalsConceded: 15.8, daysSinceLastMatch: 12 }
             },
             keyPositives: ["Two top-5 ranked defenses", "Both teams have strong run games to control the clock", "Historically, these championship games are tighter and lower scoring", "Excellent special teams play"],
             keyNegatives: ["Both offenses have explosive playmakers", "A defensive or special teams touchdown could ruin the under"],
@@ -1350,6 +1420,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Discipline', likelihood: 'High', description: 'Expect a high number of yellow cards.' }
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 1.8, avgGoalsConceded: 0.9, daysSinceLastMatch: 5 },
+                teamB: { avgGoalsScored: 1.7, avgGoalsConceded: 0.8, daysSinceLastMatch: 5 }
+            },
             keyPositives: ["Two of the best teams in South America", "Historically close and hard-fought encounters", "Strong defensive records", "High stakes often lead to cautious play"],
             keyNegatives: ["Both teams possess incredible attacking talent", "Home advantage for Flamengo is significant"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 35, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 30, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 20, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 15, color: 'bg-amber-500' }],
@@ -1401,6 +1475,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Discipline', likelihood: 'High', description: 'A red card is highly probable in this fixture.' },
                     { eventType: 'Key Performer', likelihood: 'High', description: 'The referee will be one of the most influential figures in the match.' }
                 ]
+            },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 1.9, avgGoalsConceded: 0.7, daysSinceLastMatch: 6 },
+                teamB: { avgGoalsScored: 1.5, avgGoalsConceded: 0.9, daysSinceLastMatch: 6 }
             },
             keyPositives: ["Most intense derby in the world", "Average of 9.8 cards in last 10 H2H", "Aggressive and passionate players", "High-pressure environment for the referee"],
             keyNegatives: ["A referee might try to 'let the game flow'", "An early blowout could reduce the tension (unlikely)"],
@@ -1455,6 +1533,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Pace Change', likelihood: 'High', description: 'The game will be played at a high tempo from start to finish.' }
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 2.6, avgGoalsConceded: 1.8, daysSinceLastMatch: 7 },
+                teamB: { avgGoalsScored: 3.0, avgGoalsConceded: 0.9, daysSinceLastMatch: 7 }
+            },
             keyPositives: ["Historically high-scoring derby", "Both teams have elite attacks and average over 2.5 goals/game", "Attacking philosophies of both managers", "8 of last 10 H2H saw this bet win"],
             keyNegatives: ["Derby pressure can sometimes lead to mistakes", "Goalkeepers are in good form"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 50, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 25, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 15, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 10, color: 'bg-amber-500' }],
@@ -1507,6 +1589,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Performer', likelihood: 'High', description: 'Di María is projected to have a key role in the outcome.' },
                     { eventType: 'Discipline', likelihood: 'Medium', description: 'A late red card is a possibility as the tension rises.' }
                 ]
+            },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 2.5, avgGoalsConceded: 0.8, daysSinceLastMatch: 8 },
+                teamB: { avgGoalsScored: 2.1, avgGoalsConceded: 0.7, daysSinceLastMatch: 9 }
             },
             keyPositives: ["Incredible home record (14W-1D-0L)", "Stronger offensive metrics than Porto", "Di María in excellent form", "Porto have struggled in their last few away games"],
             keyNegatives: ["Porto is a very experienced and resilient team", "'O Clássico' is always a tight affair"],
@@ -1561,6 +1647,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Discipline', likelihood: 'High', description: 'A red card is a very strong possibility.' }
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 2.8, avgGoalsConceded: 0.7, daysSinceLastMatch: 7 },
+                teamB: { avgGoalsScored: 2.7, avgGoalsConceded: 0.8, daysSinceLastMatch: 7 }
+            },
             keyPositives: ["Massive home-field advantage ('Hell')", "Better current form", "Icardi's clutch goalscoring record", "Fenerbahçe's poor record in this fixture away from home"],
             keyNegatives: ["Fenerbahçe has a squad full of experienced stars", "Derbies are always unpredictable"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 55, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 20, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 15, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 10, color: 'bg-amber-500' }],
@@ -1613,6 +1703,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Performer', likelihood: 'High', description: 'Kyogo is projected to score.' },
                     { eventType: 'Pace Change', likelihood: 'High', description: 'Celtic will play at a very high tempo.' }
                 ]
+            },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 3.1, avgGoalsConceded: 0.8, daysSinceLastMatch: 7 },
+                teamB: { avgGoalsScored: 2.5, avgGoalsConceded: 0.6, daysSinceLastMatch: 8 }
             },
             keyPositives: ["Dominant home record", "Superior attacking metrics", "Rangers have struggled defensively in recent away games", "Strong record against Rangers at Celtic Park"],
             keyNegatives: ["Rangers' threat from set-pieces (Tavernier)", "The 'anything can happen' nature of a derby"],
@@ -1667,6 +1761,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Performer', likelihood: 'High', description: 'Summerville is projected to have a goal or an assist.' }
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 2.1, avgGoalsConceded: 0.9, daysSinceLastMatch: 6 },
+                teamB: { avgGoalsScored: 2.0, avgGoalsConceded: 1.0, daysSinceLastMatch: 6 }
+            },
             keyPositives: ["#1 and #2 attacks in the league", "Both teams average over 1.8 goals per game", "Both teams play an open, attacking style", "Key attacking players are in top form"],
             keyNegatives: ["High stakes could lead to a more cautious approach", "Both teams have quality goalkeepers"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 50, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 25, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 15, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 10, color: 'bg-amber-500' }],
@@ -1719,6 +1817,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Performer', likelihood: 'High', description: 'Milinković-Savić is projected to dominate the midfield battle.' },
                     { eventType: 'Key Score', likelihood: 'Medium', description: 'A goal from outside the box is a possibility with the talent on display.' }
                 ]
+            },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 2.9, avgGoalsConceded: 1.2, daysSinceLastMatch: 6 },
+                teamB: { avgGoalsScored: 3.1, avgGoalsConceded: 0.5, daysSinceLastMatch: 6 }
             },
             keyPositives: ["Unbeaten all season", "Far superior defensive record", "More balanced and cohesive team", "Dominant midfield"],
             keyNegatives: ["Facing Cristiano Ronaldo", "Playing away from home in a derby environment"],
@@ -1773,6 +1875,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Score', likelihood: 'Medium', description: 'A goal after the 85th minute is a distinct possibility for Leverkusen.' }
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 1.9, avgGoalsConceded: 1.1, daysSinceLastMatch: 4 },
+                teamB: { avgGoalsScored: 2.8, avgGoalsConceded: 0.8, daysSinceLastMatch: 4 }
+            },
             keyPositives: ["Unbeaten in all competitions", "Tactically superior system under Xabi Alonso", "Incredible team spirit and belief", "Deeper and more talented squad"],
             keyNegatives: ["Playing in the intimidating Stadio Olimpico", "Roma's strong record in European home games"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 45, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 25, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 15, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 15, color: 'bg-amber-500' }],
@@ -1826,6 +1932,10 @@ const mockPredictions: MatchPrediction[] = [
                     { eventType: 'Key Score', likelihood: 'Medium', description: 'A goal from Germán Cano is highly probable.' }
                 ]
             },
+            statisticalProfile: {
+                teamA: { avgGoalsScored: 2.0, avgGoalsConceded: 1.0, daysSinceLastMatch: 4 },
+                teamB: { avgGoalsScored: 1.5, avgGoalsConceded: 0.8, daysSinceLastMatch: 5 }
+            },
             keyPositives: ["LDU Quito's terrible away record at sea-level", "Fluminense's strong home form at the Maracanã", "Technical and tactical superiority", "Defending Copa Libertadores champions"],
             keyNegatives: ["LDU Quito is a resilient and well-coached team", "Fluminense can sometimes be wasteful in front of goal"],
             confidenceBreakdown: [{ model: 'XGBoost', weight: 50, color: 'bg-green-500' }, { model: 'LSTM Network', weight: 20, color: 'bg-sky-500' }, { model: 'Graph Network', weight: 20, color: 'bg-purple-500' }, { model: 'Bayesian Net', weight: 10, color: 'bg-amber-500' }],
@@ -1849,7 +1959,17 @@ const mockPredictions: MatchPrediction[] = [
             ]
         }
     }
-];
+// FIX: Add 'as const' to ensure TypeScript infers literal types for properties like 'status',
+// satisfying the strict union types defined in 'types.ts' and resolving the type error.
+] as const;
+
+const mockPredictions: MatchPrediction[] = rawPredictions.map(p => ({
+    ...p,
+    aiAnalysis: {
+        ...p.aiAnalysis,
+        estimatedWinProbability: calculateProbFromEV(p.aiAnalysis.expectedValue, p.odds),
+    }
+}));
 
 
 /**
@@ -2055,7 +2175,9 @@ export const generateTickets = async (selections: TicketSelection[], totalStake:
 
     if (selections.length === 0) return [];
     
+    // FIX: Declare the 'variations' array, which was previously used without being initialized.
     const variations: TicketVariation[] = [];
+
     const totalEV = selections.reduce((acc, s) => acc + s.aiAnalysis.expectedValue, 0) / selections.length;
 
     // 1. Conservative Strategy: Singles
