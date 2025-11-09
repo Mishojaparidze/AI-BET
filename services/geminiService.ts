@@ -26,6 +26,7 @@ export const getAiChatResponse = async (userPrompt: string, context: MatchPredic
 
   const model = 'gemini-2.5-flash';
   
+  // FIX: Separated system instruction from the main prompt to align with Gemini API best practices.
   const systemInstruction = `You are BetGenius AI, a world-class sports betting analyst.
 - Your knowledge is strictly limited to the JSON data provided below containing sports match predictions. Do not use any external knowledge or make up information.
 - Your task is to analyze this data to answer the user's question in a clear, confident, and helpful tone.
@@ -49,9 +50,7 @@ export const getAiChatResponse = async (userPrompt: string, context: MatchPredic
 
   const stringifiedContext = JSON.stringify(simplifiedContext, null, 2);
 
-  const fullPrompt = `${systemInstruction}
-
-Here is the data for the available matches:
+  const promptWithContext = `Here is the data for the available matches:
 \`\`\`json
 ${stringifiedContext}
 \`\`\`
@@ -66,7 +65,10 @@ Your Analysis:
   try {
     const response = await ai.models.generateContent({
       model: model,
-      contents: fullPrompt,
+      contents: promptWithContext,
+      config: {
+        systemInstruction: systemInstruction
+      },
     });
     
     return response.text;

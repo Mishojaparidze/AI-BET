@@ -34,7 +34,6 @@ export type GameEventType = 'Key Score' | 'Discipline' | 'Turnover' | 'Injury' |
 export interface GameScenario {
     narrative: string;
     scorePrediction?: string;
-    // FIX: Use readonly array to match 'as const' inference from apiService.ts
     keyEvents: readonly {
         eventType: GameEventType;
         likelihood: 'High' | 'Medium' | 'Low';
@@ -51,14 +50,12 @@ export interface DataSource {
     category: string;
     provider: string;
     status: DataSourceStatus;
-    // FIX: Use readonly array to match 'as const' inference from apiService.ts
     metrics: readonly DataSourceMetric[];
 }
 
 export interface SentimentAnalysis {
     overallSentiment: Sentiment;
     newsSummary: string;
-    // FIX: Use readonly array to match 'as const' inference from apiService.ts
     socialMediaKeywords: readonly string[];
 }
 
@@ -69,11 +66,8 @@ export interface AIDecisionFlowStep {
 }
 
 export interface AIAnalysis {
-    // FIX: Use readonly array to match 'as const' inference from apiService.ts
     keyPositives: readonly string[];
-    // FIX: Use readonly array to match 'as const' inference from apiService.ts
     keyNegatives: readonly string[];
-    // FIX: Use readonly array to match 'as const' inference from apiService.ts
     confidenceBreakdown: readonly {
         model: string;
         weight: number;
@@ -88,16 +82,13 @@ export interface AIAnalysis {
         significantOddsMovement: boolean;
     };
     riskLevel: RiskLevel;
-    // FIX: Use readonly array to match 'as const' inference from apiService.ts
     decisionFlow: readonly AIDecisionFlowStep[];
     sentimentAnalysis: SentimentAnalysis;
-    // FIX: Use readonly array to match 'as const' inference from apiService.ts
     dataSources: readonly DataSource[];
     formAnalysis: { 
         teamA: string; 
         teamB: string; 
     };
-    // FIX: Use readonly array to match 'as const' inference from apiService.ts
     playerAnalysis: readonly { 
         name: string;
         team: 'A' | 'B';
@@ -164,6 +155,12 @@ export interface HeadToHeadFixture {
     };
 }
 
+export interface OddsHistoryPoint {
+    date: string;
+    oddsA: number;
+    oddsB: number;
+    oddsDraw: number;
+}
 
 export interface UserSettings {
     maxStakePerBet: number;

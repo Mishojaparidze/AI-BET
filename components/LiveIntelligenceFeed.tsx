@@ -64,7 +64,7 @@ const DataSourceItem: React.FC<{source: DataSource}> = ({ source }) => {
 }
 
 interface LiveIntelligenceFeedProps {
-    sources: DataSource[];
+    sources: readonly DataSource[];
 }
 
 export const LiveIntelligenceFeed: React.FC<LiveIntelligenceFeedProps> = ({ sources }) => {
