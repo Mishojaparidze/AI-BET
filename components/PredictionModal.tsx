@@ -1,29 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { MatchPrediction, LiveMatchPrediction, RiskLevel, HeadToHeadFixture, OddsHistoryPoint } from '../types';
 import * as api from '../services/apiService';
+import { getAiChallengeResponse } from '../services/geminiService';
 import { Accordion } from './Accordion';
 import { LiveIntelligenceFeed } from './LiveIntelligenceFeed';
 import { HeadToHeadAnalysis } from './HeadToHeadAnalysis';
 import { OddsHistoryChart } from './OddsHistoryChart';
 import { LoadingSpinner } from './LoadingSpinner';
-
-interface PredictionModalProps {
-  match: MatchPrediction | LiveMatchPrediction;
-  onClose: () => void;
-  onAddToTicket: (prediction: MatchPrediction) => void;
-}
+import { useStore } from '../store/useStore';
 
 const XIcon: React.FC<{className?: string}> = ({className}) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 )
+const PlusCircleIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+);
+const CheckCircleIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+);
 
-export const PredictionModal: React.FC<PredictionModalProps> = ({ match, onClose, onAddToTicket }) => {
-    const { aiAnalysis } = match;
+
+export const PredictionModal: React.FC = () => {
+    const { match, setSelectedMatch, handleAddToTicket, getMarketsForMatch, ticketSelections } = useStore(state => ({
+        match: state.selectedMatch,
+        setSelectedMatch: state.setSelectedMatch,
+        handleAddToTicket: state.handleAddToTicket,
+        getMarketsForMatch: state.getMarketsForMatch,
+        ticketSelections: state.ticketSelections,
+    }));
+    
     const [activeTab, setActiveTab] = useState('analysis');
     const [h2hData, setH2hData] = useState<HeadToHeadFixture[] | null>(null);
     const [oddsHistory, setOddsHistory] = useState<OddsHistoryPoint[] | null>(null);
     const [isLoadingH2H, setIsLoadingH2H] = useState(false);
     const [isLoadingOdds, setIsLoadingOdds] = useState(false);
+    const [challengeResponse, setChallengeResponse] = useState<string | null>(null);
+    const [isChallenging, setIsChallenging] = useState(false);
+
+    const allMarketsForMatch = match ? getMarketsForMatch(match.matchId) : [];
+
+    const onClose = () => setSelectedMatch(null);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -36,6 +52,11 @@ export const PredictionModal: React.FC<PredictionModalProps> = ({ match, onClose
     }, [onClose]);
 
      useEffect(() => {
+        if (!match) return;
+        // Pre-emptively switch to 'analysis' if 'All Markets' is not available (e.g. for live matches where it's not implemented yet)
+        if (activeTab === 'markets' && allMarketsForMatch.length <= 1) {
+            setActiveTab('analysis');
+        }
         if (activeTab === 'h2h' && !h2hData) {
             setIsLoadingH2H(true);
             api.fetchHeadToHead(match.teamAId, match.teamBId)
@@ -50,8 +71,35 @@ export const PredictionModal: React.FC<PredictionModalProps> = ({ match, onClose
                 .catch(console.error)
                 .finally(() => setIsLoadingOdds(false));
         }
-    }, [activeTab, h2hData, oddsHistory, match.teamAId, match.teamBId, match.id]);
+    }, [activeTab, h2hData, oddsHistory, match, allMarketsForMatch.length]);
 
+    // Reset state when match changes
+    useEffect(() => {
+        setActiveTab('analysis');
+        setH2hData(null);
+        setOddsHistory(null);
+        setChallengeResponse(null);
+        setIsChallenging(false);
+    }, [match]);
+
+    if (!match) return null;
+
+    const { aiAnalysis } = match;
+
+    const handleChallengeClick = async () => {
+        if (!match || isChallenging) return;
+        setIsChallenging(true);
+        setChallengeResponse(null); // Clear previous response
+        try {
+            const response = await getAiChallengeResponse(match);
+            setChallengeResponse(response);
+        } catch (error) {
+            console.error("Failed to get challenge response:", error);
+            setChallengeResponse("An unexpected error occurred while generating the counter-argument.");
+        } finally {
+            setIsChallenging(false);
+        }
+    };
 
     const renderDecisionFlow = () => (
         <div className="space-y-2">
@@ -104,6 +152,31 @@ export const PredictionModal: React.FC<PredictionModalProps> = ({ match, onClose
              <Accordion title="Live Intelligence Feed">
                 <LiveIntelligenceFeed sources={aiAnalysis.dataSources} />
             </Accordion>
+
+            <div className="border-t border-brand-border pt-6 mt-6">
+                {isChallenging ? (
+                    <LoadingSpinner />
+                ) : challengeResponse ? (
+                    <div className="animate-fade-in space-y-3">
+                        <h3 className="text-lg font-bold text-brand-yellow">AI's Second Opinion</h3>
+                        <div 
+                            className="bg-brand-bg-dark p-4 rounded-lg prose prose-sm prose-invert max-w-none" 
+                            dangerouslySetInnerHTML={{ __html: challengeResponse.replace(/\n/g, '<br />') }}
+                        />
+                    </div>
+                ) : (
+                    <div className="text-center">
+                        <p className="text-sm text-brand-text-secondary mb-3">Want a different perspective?</p>
+                        <button 
+                            onClick={handleChallengeClick}
+                            className="bg-brand-yellow/20 text-brand-yellow font-bold px-6 py-2 rounded-lg hover:bg-brand-yellow/30 transition-colors flex items-center gap-2 mx-auto"
+                        >
+                             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                            Challenge AI Prediction
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 
@@ -118,6 +191,45 @@ export const PredictionModal: React.FC<PredictionModalProps> = ({ match, onClose
         if (!oddsHistory) return <p>Could not load Odds History data.</p>;
         return <OddsHistoryChart data={oddsHistory} teamA={match.teamA} teamB={match.teamB} />;
     };
+
+    const renderMarketsTab = () => {
+        return (
+            <div className="space-y-3">
+                {allMarketsForMatch.map(market => {
+                    const isSelected = ticketSelections.some(s => s.id === market.id);
+                    return (
+                        <div key={market.id} className="bg-brand-bg-dark p-4 rounded-lg flex justify-between items-center">
+                            <div>
+                                <p className="font-bold text-brand-text-primary">{market.prediction}</p>
+                                <p className="text-xs text-brand-text-secondary">{market.marketType}</p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <span className="text-xl font-bold text-brand-yellow">{market.odds.toFixed(2)}</span>
+                                 <button
+                                    onClick={() => handleAddToTicket(market)}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors flex items-center gap-2 ${
+                                        isSelected 
+                                        ? 'bg-brand-green/20 text-brand-green' 
+                                        : 'bg-brand-green/80 text-white hover:bg-brand-green'
+                                    }`}
+                                >
+                                    {isSelected ? <CheckCircleIcon className="w-4 h-4"/> : <PlusCircleIcon className="w-4 h-4"/>}
+                                    {isSelected ? 'Added' : 'Add'}
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        )
+    }
+    
+    const tabs = [
+        { id: 'analysis', label: 'AI Analysis' },
+        ...(allMarketsForMatch.length > 1 && !('liveOdds' in match) ? [{ id: 'markets', label: 'All Markets' }] : []),
+        { id: 'h2h', label: 'Head-to-Head' },
+        { id: 'odds', label: 'Odds History' }
+    ];
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
@@ -135,14 +247,23 @@ export const PredictionModal: React.FC<PredictionModalProps> = ({ match, onClose
         </header>
         
         <main className="p-6 overflow-y-auto">
-            <div className="border-b border-brand-border mb-6">
-                <nav className="flex space-x-6">
-                    <button className={`pb-3 border-b-2 font-semibold ${activeTab === 'analysis' ? 'border-brand-green text-brand-text-primary' : 'border-transparent text-brand-text-secondary hover:border-brand-border'}`} onClick={() => setActiveTab('analysis')}>AI Analysis</button>
-                    <button className={`pb-3 border-b-2 font-semibold ${activeTab === 'h2h' ? 'border-brand-green text-brand-text-primary' : 'border-transparent text-brand-text-secondary hover:border-brand-border'}`} onClick={() => setActiveTab('h2h')}>Head-to-Head</button>
-                    <button className={`pb-3 border-b-2 font-semibold ${activeTab === 'odds' ? 'border-brand-green text-brand-text-primary' : 'border-transparent text-brand-text-secondary hover:border-brand-border'}`} onClick={() => setActiveTab('odds')}>Odds History</button>
-                </nav>
+            <div className="mb-6 bg-brand-bg-dark p-1.5 rounded-lg flex items-center gap-2 max-w-max">
+                {tabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${
+                            activeTab === tab.id
+                                ? 'bg-brand-bg-light text-brand-text-primary shadow-sm'
+                                : 'text-brand-text-secondary hover:text-brand-text-primary'
+                        }`}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
             </div>
             {activeTab === 'analysis' && renderAnalysisTab()}
+            {activeTab === 'markets' && renderMarketsTab()}
             {activeTab === 'h2h' && renderH2HTab()}
             {activeTab === 'odds' && renderOddsTab()}
         </main>
@@ -154,7 +275,7 @@ export const PredictionModal: React.FC<PredictionModalProps> = ({ match, onClose
             </div>
              {!('liveOdds' in match) && (
                  <button 
-                    onClick={() => onAddToTicket(match)}
+                    onClick={() => handleAddToTicket(match as MatchPrediction)}
                     className="bg-brand-green text-white font-bold px-6 py-3 rounded-lg hover:bg-opacity-90 transition-colors"
                 >
                     Add to Ticket

@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserSettings } from '../types';
-
-interface SettingsModalProps {
-    currentSettings: UserSettings;
-    initialBankroll: number;
-    onClose: () => void;
-    onSave: (newSettings: UserSettings) => void;
-    onUpdateBankroll: (newInitial: number) => void;
-}
+import { useStore } from '../store/useStore';
 
 const XIcon: React.FC<{className?: string}> = ({className}) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -36,13 +29,24 @@ const InputField: React.FC<{
     </div>
 );
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ currentSettings, initialBankroll, onClose, onSave, onUpdateBankroll }) => {
+export const SettingsModal: React.FC = () => {
+    const { currentSettings, initialBankroll, setIsSettingsOpen, updateSettings, updateBankroll } = useStore(state => ({
+        currentSettings: state.userSettings,
+        initialBankroll: state.bankroll?.initial,
+        setIsSettingsOpen: state.setIsSettingsOpen,
+        updateSettings: state.updateSettings,
+        updateBankroll: state.updateBankroll,
+    }));
+    
     const [settings, setSettings] = useState(currentSettings);
     const [bankroll, setBankroll] = useState(initialBankroll);
 
+    const onClose = () => setIsSettingsOpen(false);
+
     const errors = useMemo(() => {
+        if (!settings) return {};
         const newErrors: { [key: string]: string } = {};
-        if (bankroll <= 0) {
+        if (bankroll === undefined || bankroll <= 0) {
             newErrors.initialBankroll = "Bankroll must be greater than zero.";
         }
         if (settings.maxStakePerBet <= 0) {
@@ -68,17 +72,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentSettings, i
     }, [onClose]);
 
     const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSettings(prev => ({...prev, [e.target.id]: Number(e.target.value)}));
+        setSettings(prev => prev ? ({...prev, [e.target.id]: Number(e.target.value)}) : null);
     }
     
     const handleSave = () => {
-        if (!isValid) return;
-        onSave(settings);
-        if (bankroll !== initialBankroll) {
-            onUpdateBankroll(bankroll);
+        if (!isValid || !settings) return;
+        updateSettings(settings);
+        if (bankroll !== undefined && bankroll !== initialBankroll) {
+            updateBankroll(bankroll);
         }
         onClose();
     }
+
+    if (!settings || bankroll === undefined) return null;
 
     return (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>

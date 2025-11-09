@@ -1,11 +1,8 @@
 import React from 'react';
-import { BankrollState, UserSettings } from '../types';
 import { BetPerformance } from './BetPerformance';
-
-interface BankrollManagerProps {
-    bankroll: BankrollState;
-    userSettings: UserSettings;
-}
+import { useStore } from '../store/useStore';
+import { Accordion } from './Accordion';
+import { BankrollChart } from './BankrollChart';
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -15,15 +12,22 @@ const formatCurrency = (amount: number) => {
 };
 
 const TrendingUpIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+    <svg xmlns="http://www.w.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
 );
 
 const TrendingDownIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+    <svg xmlns="http://www.w.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
 );
 
-export const BankrollManager: React.FC<BankrollManagerProps> = ({ bankroll, userSettings }) => {
-    const { initial, current, totalWagered, totalReturned, dailyWagered } = bankroll;
+export const BankrollManager: React.FC = () => {
+    const { bankroll, userSettings } = useStore(state => ({
+        bankroll: state.bankroll,
+        userSettings: state.userSettings,
+    }));
+
+    if (!bankroll || !userSettings) return null;
+
+    const { initial, current, totalWagered, dailyWagered } = bankroll;
     const profit = current - initial;
     const isProfitable = profit >= 0;
 
@@ -67,7 +71,13 @@ export const BankrollManager: React.FC<BankrollManagerProps> = ({ bankroll, user
             </div>
             
             <div className="border-t border-brand-border pt-4 mt-4">
-                 <BetPerformance bankroll={bankroll} />
+                 <BetPerformance />
+            </div>
+            
+            <div className="mt-4">
+                <Accordion title="Bankroll History">
+                    <BankrollChart />
+                </Accordion>
             </div>
 
         </section>

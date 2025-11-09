@@ -1,18 +1,19 @@
 import React from 'react';
 import { MatchPrediction } from '../types';
 import { ConfidenceBadge } from './ConfidenceBadge';
+import { useStore } from '../store/useStore';
 
 interface BetOfTheDayCardProps {
     prediction: MatchPrediction;
-    onSelect: (prediction: MatchPrediction) => void;
 }
 
 const StarIcon: React.FC<{className?: string}> = ({className}) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
 );
 
-export const BetOfTheDayCard: React.FC<BetOfTheDayCardProps> = ({ prediction, onSelect }) => {
+export const BetOfTheDayCard: React.FC<BetOfTheDayCardProps> = ({ prediction }) => {
     const { teamA, teamB, league, prediction: bet, odds, confidence, aiAnalysis } = prediction;
+    const onSelect = useStore(state => state.setSelectedMatch);
     
     return (
         <section className="bg-gradient-to-br from-brand-green/20 to-brand-bg-light p-6 rounded-lg border-2 border-brand-green shadow-lg shadow-green-900/20">

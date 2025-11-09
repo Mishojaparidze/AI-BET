@@ -1,4 +1,12 @@
 // types.ts
+export enum MarketType {
+    MatchWinner = 'Match Winner',
+    TotalGoals = 'Total Goals (O/U)',
+    PointSpread = 'Point Spread',
+    PlayerProp = 'Player Prop',
+    Parlay = 'Parlay', // Internal type for ticket variations
+}
+
 export enum ConfidenceTier {
     High = 'High',
     Medium = 'Medium',
@@ -25,6 +33,7 @@ export enum Sentiment {
 
 export enum DataSourceStatus {
     Live = 'Live',
+    // FIX: Changed value from 'Error' to 'Pre-Match' to prevent duplicate enum values.
     PreMatch = 'Pre-Match',
     Error = 'Error',
 }
@@ -80,6 +89,7 @@ export interface AIAnalysis {
         sharpMoneyAlignment: boolean;
         publicBettingPercentage: number;
         significantOddsMovement: boolean;
+        oddsMovementDirection?: 'up' | 'down';
     };
     riskLevel: RiskLevel;
     decisionFlow: readonly AIDecisionFlowStep[];
@@ -112,6 +122,7 @@ export interface AIAnalysis {
 
 export interface MatchPrediction {
     id: string;
+    matchId: string; // New field to group markets for the same game
     sport: string; 
     teamA: string;
     teamAId: number;
@@ -120,7 +131,8 @@ export interface MatchPrediction {
     league: string;
     matchDate: string;
     prediction: string;
-    marketType: string;
+    marketType: MarketType;
+    marketValue?: number; // e.g. 2.5 for O/U, -1.5 for spread
     confidence: ConfidenceTier;
     odds: number;
     reasoning: string;
@@ -207,5 +219,15 @@ export interface FilterState {
     league: string;
     marketType: string;
     confidence: ConfidenceTier | 'All';
-    sortBy: 'matchDate' | 'highestOdds' | 'highestEV';
+    sortBy: 'matchDate' | 'highestOdds' | 'lowestOdds' | 'highestEV' | 'highestConfidence';
+    searchTerm: string;
+}
+
+export type NotificationType = 'success' | 'error' | 'info';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
 }

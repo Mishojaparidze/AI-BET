@@ -1,4 +1,4 @@
-import { type MatchPrediction, type LiveMatchPrediction, ConfidenceTier, Momentum, type BankrollState, RiskLevel, type AIDecisionFlowStep, type UserBet, type TicketSelection, type TicketVariation, Sentiment, DataSourceStatus, type UserSettings, type HeadToHeadFixture, type OddsHistoryPoint } from '../types';
+import { type MatchPrediction, type LiveMatchPrediction, ConfidenceTier, Momentum, type BankrollState, RiskLevel, type AIDecisionFlowStep, type UserBet, type TicketSelection, type TicketVariation, Sentiment, DataSourceStatus, type UserSettings, type HeadToHeadFixture, type OddsHistoryPoint, MarketType } from '../types';
 import { API_BASE_URL } from './config';
 
 // --- MOCK SERVICE IMPLEMENTATION (Encapsulates all original logic for fallback) ---
@@ -68,15 +68,59 @@ const createMockService = () => {
       const total = Math.max(0.01, homeScore) + Math.max(0.01, awayScore) + Math.max(0.05, drawFactor);
       const homeP = Math.max(0.01, homeScore) / total, awayP = Math.max(0.01, awayScore) / total, drawP = Math.max(0.05, drawFactor) / total;
       const sum = homeP + drawP + awayP;
-      return { homeProbability: homeP / sum, drawProbability: drawP / sum, awayProbability: awayP / sum, homeStats, awayStats };
+      return { homeProbability: homeP / sum, drawProbability: drawP / sum, awayProbability: awayP / sum, homeStats, awayStats, totalGoals: homeStats.avgGoalsScored + awayStats.avgGoalsScored };
     };
     const calculateEV = (p: number, o: number) => (p * (o - 1)) - (1 - p);
     const calculateKellyStake = (p: number, o: number, f = 0.25) => { if (o <= 1) return 0; const k = ( (o-1) * p - (1-p) ) / (o-1); return Math.min(Math.max(0, k * f) * 100, 10); };
     
     // --- Data Generation (from original file) ---
-    const teamData: Record<string, { name: string; id: number; league: string; }[]> = { "Soccer": [ { name: 'Arsenal', id: 42, league: 'Premier League' }, { name: 'Tottenham Hotspur', id: 47, league: 'Premier League' }, { name: 'Real Madrid', id: 541, league: 'La Liga' }, { name: 'Barcelona', id: 529, league: 'La Liga' }, { name: 'Borussia Dortmund', id: 165, league: 'Bundesliga' }, { name: 'Bayern Munich', id: 157, league: 'Bundesliga' }, { name: 'LAFC', id: 601, league: 'MLS' }, { name: 'LA Galaxy', id: 602, league: 'MLS' }, { name: 'Inter Milan', id: 505, league: 'Serie A' }, { name: 'AC Milan', id: 489, league: 'Serie A' }, { name: 'PSG', id: 85, league: 'Ligue 1' }, { name: 'Marseille', id: 81, league: 'Ligue 1' }, ], "Basketball": [ { name: 'Denver Nuggets', id: 10, league: 'NBA Playoffs' }, { name: 'Minnesota Timberwolves', id: 11, league: 'NBA Playoffs' }, { name: 'Olympiacos', id: 1101, league: 'EuroLeague' }, { name: 'Panathinaikos', id: 1102, league: 'EuroLeague' }, ], "American Football": [ { name: 'Green Bay Packers', id: 201, league: 'NFL' }, { name: 'Chicago Bears', id: 202, league: 'NFL' }, { name: 'Alabama', id: 2001, league: 'NCAA Football' }, { name: 'Georgia', id: 2002, league: 'NCAA Football' }, ], "Hockey": [ { name: 'Toronto Maple Leafs', id: 301, league: 'NHL Playoffs' }, { name: 'Boston Bruins', id: 302, league: 'NHL Playoffs' }, ] };
+    const teamData: Record<string, { name: string; id: number; league: string; players?: { name: string; position: string; }[] }[]> = { 
+        "Soccer": [ { name: 'Arsenal', id: 42, league: 'Premier League', players: [{ name: 'Bukayo Saka', position: 'FW'}] }, { name: 'Tottenham Hotspur', id: 47, league: 'Premier League', players: [{ name: 'Son Heung-min', position: 'FW'}] }, { name: 'Real Madrid', id: 541, league: 'La Liga' }, { name: 'Barcelona', id: 529, league: 'La Liga' }, { name: 'Borussia Dortmund', id: 165, league: 'Bundesliga' }, { name: 'Bayern Munich', id: 157, league: 'Bundesliga' }, { name: 'LAFC', id: 601, league: 'MLS' }, { name: 'LA Galaxy', id: 602, league: 'MLS' }, { name: 'Inter Milan', id: 505, league: 'Serie A' }, { name: 'AC Milan', id: 489, league: 'Serie A' }, { name: 'PSG', id: 85, league: 'Ligue 1' }, { name: 'Marseille', id: 81, league: 'Ligue 1' }, ], 
+        "Basketball": [ 
+            { name: 'Denver Nuggets', id: 10, league: 'NBA Playoffs', players: [{ name: 'Nikola Jokic', position: 'C' }, { name: 'Jamal Murray', position: 'PG' }] }, 
+            { name: 'Minnesota Timberwolves', id: 11, league: 'NBA Playoffs', players: [{ name: 'Anthony Edwards', position: 'SG' }, { name: 'Karl-Anthony Towns', position: 'C' }] }, 
+            { name: 'Olympiacos', id: 1101, league: 'EuroLeague', players: [{ name: 'Kostas Sloukas', position: 'PG' }, { name: 'Sasha Vezenkov', position: 'PF' }] }, 
+            { name: 'Panathinaikos', id: 1102, league: 'EuroLeague', players: [{ name: 'Marius Grigonis', position: 'SG' }, { name: 'Georgios Papagiannis', position: 'C' }] }, 
+        ], 
+        "American Football": [ 
+            { name: 'Green Bay Packers', id: 201, league: 'NFL', players: [{ name: 'Jordan Love', position: 'QB' }, { name: 'Christian Watson', position: 'WR' }] }, 
+            { name: 'Chicago Bears', id: 202, league: 'NFL', players: [{ name: 'Caleb Williams', position: 'QB' }, { name: 'DJ Moore', position: 'WR' }] }, 
+            { name: 'Alabama', id: 2001, league: 'NCAA Football', players: [{ name: 'Jalen Milroe', position: 'QB' }, { name: 'Kool-Aid McKinstry', position: 'CB' }] }, 
+            { name: 'Georgia', id: 2002, league: 'NCAA Football', players: [{ name: 'Carson Beck', position: 'QB' }, { name: 'Brock Bowers', position: 'TE' }] }, 
+        ], 
+        "Hockey": [ { name: 'Toronto Maple Leafs', id: 301, league: 'NHL Playoffs' }, { name: 'Boston Bruins', id: 302, league: 'NHL Playoffs' }, ] 
+    };
     const allTeams = Object.values(teamData).flat().map(t => t.name);
     const historicalMatches = generateHistoricalData(allTeams, 500);
+
+// FIX: Added explicit return type `MatchPrediction` to ensure type safety for nested properties like `decisionFlow`.
+    const generatePrediction = (matchInfo: any, predictionData: any): MatchPrediction => {
+        const { homeTeam, awayTeam, matchDate, homeStats, awayStats, sport } = matchInfo;
+        const { prediction, marketType, marketValue, probability } = predictionData;
+
+        const odds = parseFloat((1 / (probability - 0.05) + Math.random() * 0.2).toFixed(2));
+        const expectedValue = calculateEV(probability, odds) * 100;
+        const kellyStakePercentage = calculateKellyStake(probability, odds);
+        const significantOddsMovement = Math.random() > 0.7;
+        const oddsMovementDirection = significantOddsMovement ? (Math.random() > 0.5 ? 'up' : 'down') : undefined;
+
+        let confidence: ConfidenceTier;
+        if (probability > 0.60) confidence = ConfidenceTier.High; else if (probability > 0.45) confidence = ConfidenceTier.Medium; else confidence = ConfidenceTier.Low;
+
+        return {
+            id: `${homeTeam.id}-${awayTeam.id}-${prediction.replace(/\s/g, '')}`.toLowerCase(),
+            matchId: `${homeTeam.id}-${awayTeam.id}`,
+            sport,
+            teamA: homeTeam.name, teamAId: homeTeam.id,
+            teamB: awayTeam.name, teamBId: awayTeam.id,
+            league: homeTeam.league,
+            matchDate: matchDate.toISOString(),
+            prediction, marketType, marketValue,
+            confidence, odds,
+            reasoning: "AI analysis highlights a statistical edge based on recent form and historical matchups.",
+            aiAnalysis: { keyPositives: ["Strong offensive metrics", "Favorable historical trend in this matchup"], keyNegatives: ["Opponent has a solid defensive record", "Key player is questionable"], confidenceBreakdown: [ { model: 'XGBoost', weight: 40, color: 'bg-green-500'}, { model: 'LSTM Network', weight: 30, color: 'bg-sky-500'}, { model: 'Ensemble', weight: 30, color: 'bg-purple-500'}], expectedValue: parseFloat(expectedValue.toFixed(1)), estimatedWinProbability: probability, kellyStakePercentage: parseFloat(kellyStakePercentage.toFixed(1)), marketInsights: { sharpMoneyAlignment: Math.random() > 0.4, publicBettingPercentage: Math.floor(Math.random() * 40) + 50, significantOddsMovement, oddsMovementDirection }, riskLevel: kellyStakePercentage > 4 ? RiskLevel.Aggressive : kellyStakePercentage > 2 ? RiskLevel.Moderate : RiskLevel.Conservative, decisionFlow: [ { step: 'Data Quality', status: 'pass', reason: 'Recent stats available.' }, { step: 'Model Agreement', status: 'pass', reason: 'High consensus for outcome.' }, { step: 'Value Check (EV > 5%)', status: expectedValue > 5 ? 'pass' : 'fail', reason: `Calculated EV is ${expectedValue.toFixed(1)}%` }, { step: 'Final Output', status: 'pass', reason: 'Recommendation generated.' } ], sentimentAnalysis: { overallSentiment: Sentiment.Neutral, newsSummary: "Pundits are expecting a close game, but note the home team's recent strong performances.", socialMediaKeywords: ["#sports", "#betting", "#analysis"] }, dataSources: [ { category: "Team & Player Stats", provider: "Sportradar", status: DataSourceStatus.PreMatch, metrics: [{name: "Avg. Score For", value: `${homeStats.avgGoalsScored.toFixed(1)} - ${awayStats.avgGoalsScored.toFixed(1)}`}] }, { category: "Live Odds & Market", provider: "Betfair", status: DataSourceStatus.PreMatch, metrics: [{name: "Implied Probability", value: `${(1/odds*100).toFixed(1)}%`}] } ], formAnalysis: { teamA: homeStats.formString, teamB: awayStats.formString }, playerAnalysis: [{ name: 'Key Players', team: 'A', impact: 'Star performers will be crucial to the outcome.' }], bettingAngle: "The model identifies an edge based on recent performance metrics that the market seems to have overlooked.", gameScenario: { narrative: "A competitive match is expected, with the home team likely controlling the pace early on.", keyEvents: [ { eventType: 'Key Score', likelihood: 'High', description: 'The first score will be critical in setting the match tempo.' }, ] }, statisticalProfile: { teamA: { avgGoalsScored: homeStats.avgGoalsScored, avgGoalsConceded: homeStats.avgGoalsConceded, daysSinceLastMatch: 7 }, teamB: { avgGoalsScored: awayStats.avgGoalsScored, avgGoalsConceded: awayStats.avgGoalsConceded, daysSinceLastMatch: 7 }, } }
+        };
+    };
 
     const generateAllPredictions = (): MatchPrediction[] => {
         const predictions: MatchPrediction[] = [];
@@ -86,16 +130,73 @@ const createMockService = () => {
             for (let i = 0; i < teams.length; i += 2) {
                 if (i + 1 >= teams.length) continue;
                 const homeTeam = teams[i], awayTeam = teams[i+1];
-                const matchDate = new Date(); matchDate.setDate(matchDate.getDate() + dayOffset);
-                const { homeProbability, drawProbability, awayProbability, homeStats, awayStats } = predictMatch(homeTeam.name, awayTeam.name, historicalMatches);
-                let predictionString = '', marketType = "Match Winner", predictionProb = 0, odds = 2.0;
-                if (homeProbability > awayProbability && homeProbability > drawProbability) { predictionString = `${homeTeam.name} to Win`; predictionProb = homeProbability; odds = parseFloat((1 / (homeProbability - 0.05) + Math.random() * 0.2).toFixed(2)); } 
-                else if (awayProbability > homeProbability && awayProbability > drawProbability) { predictionString = `${awayTeam.name} to Win`; predictionProb = awayProbability; odds = parseFloat((1 / (awayProbability - 0.05) + Math.random() * 0.2).toFixed(2)); } 
-                else { predictionString = 'Draw'; predictionProb = drawProbability; odds = parseFloat((1 / (drawProbability - 0.05) + Math.random() * 0.2).toFixed(2)); }
-                const expectedValue = calculateEV(predictionProb, odds) * 100, kellyStakePercentage = calculateKellyStake(predictionProb, odds);
-                let confidence: ConfidenceTier;
-                if (predictionProb > 0.60) confidence = ConfidenceTier.High; else if (predictionProb > 0.45) confidence = ConfidenceTier.Medium; else confidence = ConfidenceTier.Low;
-                predictions.push({ id: `${homeTeam.league.slice(0, 3)}-${homeTeam.name.slice(0, 3)}-${awayTeam.name.slice(0, 3)}`.toLowerCase(), sport, teamA: homeTeam.name, teamAId: homeTeam.id, teamB: awayTeam.name, teamBId: awayTeam.id, league: homeTeam.league, matchDate: matchDate.toISOString(), prediction: predictionString, marketType, confidence, odds, reasoning: "AI analysis highlights a statistical edge based on recent form and historical matchups.", aiAnalysis: { keyPositives: ["Strong offensive metrics", "Favorable historical trend in this matchup"], keyNegatives: ["Opponent has a solid defensive record", "Key player is questionable"], confidenceBreakdown: [ { model: 'XGBoost', weight: 40, color: 'bg-green-500'}, { model: 'LSTM Network', weight: 30, color: 'bg-sky-500'}, { model: 'Ensemble', weight: 30, color: 'bg-purple-500'}], expectedValue: parseFloat(expectedValue.toFixed(1)), estimatedWinProbability: predictionProb, kellyStakePercentage: parseFloat(kellyStakePercentage.toFixed(1)), marketInsights: { sharpMoneyAlignment: Math.random() > 0.4, publicBettingPercentage: Math.floor(Math.random() * 40) + 50, significantOddsMovement: Math.random() > 0.7 }, riskLevel: kellyStakePercentage > 4 ? RiskLevel.Aggressive : kellyStakePercentage > 2 ? RiskLevel.Moderate : RiskLevel.Conservative, decisionFlow: [ { step: 'Data Quality', status: 'pass', reason: 'Recent stats available.' }, { step: 'Model Agreement', status: 'pass', reason: 'High consensus for outcome.' }, { step: 'Value Check (EV > 5%)', status: expectedValue > 5 ? 'pass' : 'fail', reason: `Calculated EV is ${expectedValue.toFixed(1)}%` }, { step: 'Final Output', status: 'pass', reason: 'Recommendation generated.' } ], sentimentAnalysis: { overallSentiment: Sentiment.Neutral, newsSummary: "Pundits are expecting a close game, but note the home team's recent strong performances.", socialMediaKeywords: ["#sports", "#betting", "#analysis"] }, dataSources: [ { category: "Team & Player Stats", provider: "Sportradar", status: DataSourceStatus.PreMatch, metrics: [{name: "Avg. Score For", value: `${homeStats.avgGoalsScored.toFixed(1)} - ${awayStats.avgGoalsScored.toFixed(1)}`}] }, { category: "Live Odds & Market", provider: "Betfair", status: DataSourceStatus.PreMatch, metrics: [{name: "Implied Probability", value: `${(1/odds*100).toFixed(1)}%`}] } ], formAnalysis: { teamA: homeStats.formString, teamB: awayStats.formString }, playerAnalysis: [{ name: 'Key Players', team: 'A', impact: 'Star performers will be crucial to the outcome.' }], bettingAngle: "The model identifies an edge based on recent performance metrics that the market seems to have overlooked.", gameScenario: { narrative: "A competitive match is expected, with the home team likely controlling the pace early on.", keyEvents: [ { eventType: 'Key Score', likelihood: 'High', description: 'The first score will be critical in setting the match tempo.' }, ] }, statisticalProfile: { teamA: { avgGoalsScored: homeStats.avgGoalsScored, avgGoalsConceded: homeStats.avgGoalsConceded, daysSinceLastMatch: 7 }, teamB: { avgGoalsScored: awayStats.avgGoalsScored, avgGoalsConceded: awayStats.avgGoalsConceded, daysSinceLastMatch: 7 }, } }});
+                const matchDate = new Date(); matchDate.setDate(matchDate.getDate() + dayOffset); matchDate.setHours(matchDate.getHours() + (i * 2));
+                const { homeProbability, drawProbability, awayProbability, homeStats, awayStats, totalGoals } = predictMatch(homeTeam.name, awayTeam.name, historicalMatches);
+                
+                const matchInfo = { homeTeam, awayTeam, matchDate, homeStats, awayStats, sport };
+                
+                // --- Generate Market Bundles ---
+                // 1. Match Winner (always generate)
+                let winnerPrediction;
+                if (homeProbability > awayProbability && homeProbability > drawProbability) {
+                    winnerPrediction = { prediction: `${homeTeam.name} to Win`, marketType: MarketType.MatchWinner, probability: homeProbability };
+                } else if (awayProbability > homeProbability && awayProbability > drawProbability) {
+                    winnerPrediction = { prediction: `${awayTeam.name} to Win`, marketType: MarketType.MatchWinner, probability: awayProbability };
+                } else {
+                    winnerPrediction = { prediction: 'Draw', marketType: MarketType.MatchWinner, probability: drawProbability };
+                }
+                predictions.push(generatePrediction(matchInfo, winnerPrediction));
+
+                // 2. Total Goals / Spreads (for relevant sports)
+                if (sport === 'Soccer') {
+                    const marketValue = 2.5;
+                    const overProbability = Math.min(0.9, totalGoals / (marketValue * 2));
+                    const totalGoalsPrediction = { prediction: `Over ${marketValue} Goals`, marketType: MarketType.TotalGoals, marketValue, probability: overProbability };
+                    predictions.push(generatePrediction(matchInfo, totalGoalsPrediction));
+                } else if (sport === 'Basketball' || sport === 'American Football') {
+                     const isHomeFavorite = homeProbability > awayProbability;
+                    const spread = isHomeFavorite ? -(Math.floor(Math.random() * 5) + 2.5) : (Math.floor(Math.random() * 5) + 2.5);
+                    const spreadPrediction = {
+                        prediction: `${isHomeFavorite ? homeTeam.name : awayTeam.name} ${spread > 0 ? '+' : ''}${spread}`,
+                        marketType: MarketType.PointSpread,
+                        marketValue: spread,
+                        probability: 0.52 + (Math.random() * 0.1) // Simulate ~52% chance to cover
+                    };
+                    predictions.push(generatePrediction(matchInfo, spreadPrediction));
+                }
+                
+                // 3. Player Props (if players exist)
+                const hasPlayers = homeTeam.players && homeTeam.players.length > 0;
+                if (hasPlayers) {
+                     const teamToBetOn = Math.random() > 0.5 ? homeTeam : awayTeam;
+                    const player = teamToBetOn.players![Math.floor(Math.random() * teamToBetOn.players!.length)];
+                    let propType = '', line = 0, predictionString = '';
+
+                    if (sport === 'Basketball') {
+                        propType = 'Points';
+                        line = player.position === 'C' ? 22.5 : 25.5;
+                        predictionString = `${player.name} Over ${line} ${propType}`;
+                    } else if (sport === 'American Football') {
+                        propType = player.position === 'QB' ? 'Passing Yards' : 'Receiving Yards';
+                        line = player.position === 'QB' ? 250.5 : 65.5;
+                         predictionString = `${player.name} Over ${line} ${propType}`;
+                    } else if (sport === 'Soccer') {
+                        propType = 'to Score Anytime';
+                        line = 0.5;
+                         predictionString = `${player.name} ${propType}`;
+                    }
+                    
+                    if (predictionString) {
+                         const playerPropPrediction = {
+                            prediction: predictionString,
+                            marketType: MarketType.PlayerProp,
+                            marketValue: line,
+                            probability: 0.51 + (Math.random() * 0.08) // Simulate ~51-59% chance
+                        };
+                        predictions.push(generatePrediction(matchInfo, playerPropPrediction));
+                    }
+                }
+                
                 dayOffset++;
             }
         }
@@ -106,8 +207,10 @@ const createMockService = () => {
     return {
         fetchInitialData: async (): Promise<{ predictions: MatchPrediction[]; liveMatches: LiveMatchPrediction[]; bankroll: BankrollState; userBets: UserBet[]; userSettings: UserSettings; }> => {
             await new Promise(res => setTimeout(res, 1200));
-            const preMatch = mockPredictions.slice(2);
-            const liveMatches: LiveMatchPrediction[] = mockPredictions.slice(0, 2).map((p, index) => ({ ...p, scoreA: index === 0 ? 1 : 48, scoreB: index === 0 ? 0 : 45, matchTime: index === 0 ? 35 : 24, momentum: index === 0 ? Momentum.TeamA : Momentum.Neutral, liveOdds: p.odds * (index === 0 ? 0.9 : 1.1), cashOutRecommendation: { isRecommended: false, value: null, reason: null }, hasValueAlert: false }));
+            // Ensure live matches are also generated with matchIds. Re-slicing from the full list.
+            const liveMatches: LiveMatchPrediction[] = mockPredictions.slice(0, 4).map((p, index) => ({ ...p, scoreA: index % 2 === 0 ? 1 : 48, scoreB: index % 2 === 0 ? 0 : 45, matchTime: index % 2 === 0 ? 35 : 24, momentum: index % 2 === 0 ? Momentum.TeamA : Momentum.Neutral, liveOdds: p.odds * (index % 2 === 0 ? 0.9 : 1.1), cashOutRecommendation: { isRecommended: false, value: null, reason: null }, hasValueAlert: false }));
+            const preMatch = mockPredictions.filter(p => !liveMatches.some(live => live.id === p.id));
+            
             return { predictions: preMatch, liveMatches: liveMatches, bankroll: { ...bankrollDB }, userBets: [...userBetsDB], userSettings: { ...userSettingsDB } };
         },
         fetchHeadToHead: async (teamAId: number, teamBId: number): Promise<HeadToHeadFixture[]> => {
@@ -167,15 +270,85 @@ const createMockService = () => {
             return { ...userSettingsDB };
         },
         generateTickets: async (selections: TicketSelection[], totalStake: number, riskProfile: 'Conservative' | 'Balanced' | 'Aggressive'): Promise<TicketVariation[]> => {
-            await new Promise(res => setTimeout(res, 1500));
+            await new Promise(res => setTimeout(res, 1500)); // Simulate AI thinking time
             if (selections.length === 0) return [];
+
             const variations: TicketVariation[] = [];
-            const totalEV = selections.reduce((acc, s) => acc + s.aiAnalysis.expectedValue, 0) / selections.length;
-            if (riskProfile === 'Conservative' && selections.length > 1) { const stakePerBet = totalStake / selections.length; variations.push({ title: 'Conservative Singles', description: 'Spreads risk by placing an equal stake on each individual prediction.', bets: selections.map(s => ({ prediction: s, stake: stakePerBet })), totalStake: totalStake, potentialReturn: selections.reduce((acc, s) => acc + (s.odds * stakePerBet), 0), winProbability: 65, totalEV: totalEV, }); }
-            if (riskProfile === 'Balanced' && selections.length > 1) { const sortedSelections = [...selections].sort((a, b) => b.confidence === 'High' ? 1 : -1); const mainBet = sortedSelections[0]; const parlayBets = sortedSelections.slice(0, 2); const parlayOdds = parlayBets.reduce((acc, s) => acc * s.odds, 1); variations.push({ title: 'Balanced Approach', description: 'Focuses stake on the highest confidence pick, with a smaller 2-leg parlay for upside.', bets: [ { prediction: mainBet, stake: totalStake * 0.7 }, { prediction: { ...parlayBets[0], prediction: `${parlayBets.length}-Leg Parlay`, odds: parlayOdds, teamA: 'Parlay', teamB: 'Ticket', id: 'parlay-ticket', sport: 'Multiple', marketType: 'Parlay', teamAId: 0, teamBId: 0 }, stake: totalStake * 0.3 } ], totalStake: totalStake, potentialReturn: (mainBet.odds * totalStake * 0.7) + (parlayOdds * totalStake * 0.3), winProbability: 50, totalEV: totalEV, }); }
-            const parlayOdds = selections.reduce((acc, s) => acc * s.odds, 1);
-            variations.push({ title: `${selections.length}-Leg Parlay`, description: 'Combines all selections into a single high-risk, high-reward bet.', bets: [{ prediction: { ...selections[0], prediction: `${selections.length}-Leg Parlay`, odds: parlayOdds, teamA: 'Parlay', teamB: 'Ticket', id: 'parlay-ticket', sport: 'Multiple', marketType: 'Parlay', teamAId: 0, teamBId: 0 }, stake: totalStake }], totalStake: totalStake, potentialReturn: totalStake * parlayOdds, winProbability: 25, totalEV: (Math.pow(1 + (totalEV/100), selections.length) -1) * 100 });
-            return variations;
+            const sortedByConfidence = [...selections].sort((a, b) => {
+                const confidenceOrder = { [ConfidenceTier.High]: 3, [ConfidenceTier.Medium]: 2, [ConfidenceTier.Low]: 1 };
+                return confidenceOrder[b.confidence] - confidenceOrder[a.confidence];
+            });
+            
+            const isSGP = new Set(selections.map(s => s.matchId)).size === 1;
+
+            // --- AI SIMULATION LOGIC ---
+
+            // ** Conservative Strategy: Prioritize capital preservation. **
+            if (riskProfile === 'Conservative' && selections.length > 0 && !isSGP) {
+                const stakePerBet = totalStake / selections.length;
+                variations.push({
+                    title: 'Conservative Singles',
+                    description: 'AI recommends spreading risk equally across all selected matches to minimize exposure on any single outcome.',
+                    bets: selections.map(s => ({ prediction: s, stake: stakePerBet })),
+                    totalStake: totalStake,
+                    potentialReturn: selections.reduce((acc, s) => acc + (s.odds * stakePerBet), 0),
+                    winProbability: 70, 
+                    totalEV: selections.reduce((acc, s) => acc + (s.aiAnalysis.expectedValue / selections.length), 0),
+                });
+            }
+
+            // ** Balanced Strategy: A mix of a primary bet and a smaller upside play. **
+            if (riskProfile === 'Balanced' && selections.length > 1 && !isSGP) {
+                const anchorBet = sortedByConfidence[0];
+                const secondaryBets = sortedByConfidence.slice(1, 3); // Max 2-leg parlay for balance
+                const parlayOdds = secondaryBets.reduce((acc, s) => acc * s.odds, 1);
+                
+                const anchorStake = totalStake * 0.65;
+                const parlayStake = totalStake * 0.35;
+
+                variations.push({
+                    title: 'Balanced Anchor & Parlay',
+                    description: `AI suggests focusing 65% of the stake on the highest confidence pick (${anchorBet.prediction}) and combining the next two strongest picks into a smaller parlay for higher potential returns.`,
+                    bets: [
+                        { prediction: anchorBet, stake: anchorStake },
+                        { prediction: { ...secondaryBets[0], prediction: `${secondaryBets.length}-Leg Parlay`, odds: parlayOdds, teamA: 'Parlay', teamB: 'Ticket', id: 'parlay-balanced', sport: 'Multiple', marketType: MarketType.Parlay, matchId: 'parlay-balanced' }, stake: parlayStake }
+                    ],
+                    totalStake: totalStake,
+                    potentialReturn: (anchorBet.odds * anchorStake) + (parlayOdds * parlayStake),
+                    winProbability: 55,
+                    totalEV: (anchorBet.aiAnalysis.expectedValue * 0.65) + (secondaryBets.reduce((acc, s) => acc + s.aiAnalysis.expectedValue, 0) / secondaryBets.length * 0.35),
+                });
+            }
+            
+            // ** Aggressive Strategy: High-risk, high-reward parlays. **
+            if (selections.length > 0) {
+                 // SGP odds need a slight reduction for correlation, simple multiplication is fine for mock
+                 const parlayOdds = selections.reduce((acc, s) => acc * s.odds, 1) * (isSGP ? 0.9 : 1);
+                 const totalEV = selections.reduce((acc, s) => acc * (1 + s.aiAnalysis.expectedValue / 100), 1);
+                 const compoundedEV = (totalEV - 1) * 100;
+                 const title = isSGP ? `Aggressive Same Game Parlay` : `Aggressive ${selections.length}-Leg Parlay`;
+                 const description = isSGP
+                    ? 'The AI combines your selections from this single game into a high-risk, high-reward SGP.'
+                    : 'For a high-risk, high-reward approach, the AI combines all selections into a single parlay.';
+
+                 variations.push({
+                    title: title,
+                    description: description,
+                    bets: [{ prediction: { ...selections[0], prediction: `${selections.length}-Leg Parlay`, odds: parlayOdds, teamA: 'Parlay', teamB: 'Ticket', id: 'parlay-aggressive', sport: 'Multiple', marketType: MarketType.Parlay, matchId: 'parlay-aggressive' }, stake: totalStake }],
+                    totalStake: totalStake,
+                    potentialReturn: totalStake * parlayOdds,
+                    winProbability: 30,
+                    totalEV: compoundedEV,
+                });
+            }
+            
+            // Ensure there's at least one option if logic fails
+            if (variations.length === 0 && selections.length > 0) {
+                 const parlayOdds = selections.reduce((acc, s) => acc * s.odds, 1);
+                 variations.push({ title: `${selections.length}-Leg Parlay`, description: 'Default high-reward bet.', bets: [{ prediction: { ...selections[0], prediction: `${selections.length}-Leg Parlay`, odds: parlayOdds, teamA: 'Parlay', teamB: 'Ticket', id: 'parlay-default', sport: 'Multiple', marketType: MarketType.Parlay, matchId: 'parlay-default' }, stake: totalStake }], totalStake: totalStake, potentialReturn: totalStake * parlayOdds, winProbability: 25, totalEV: 0 });
+            }
+
+            return variations.slice(0, 3); // Max 3 variations
         },
     };
 };

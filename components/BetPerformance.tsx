@@ -1,18 +1,13 @@
 import React from 'react';
-import { BankrollState } from '../types';
+import { useStore } from '../store/useStore';
 
-interface BetPerformanceProps {
-    bankroll: BankrollState;
-}
-
-export const BetPerformance: React.FC<BetPerformanceProps> = ({ bankroll }) => {
-    const { totalWagered, totalReturned } = bankroll;
-
-    const roi = totalWagered > 0 ? ((totalReturned - totalWagered) / totalWagered) * 100 : 0;
+export const BetPerformance: React.FC = () => {
+    const { kpis, settledBetsCount } = useStore(state => ({
+        kpis: state.getOverallPerformanceKpis(),
+        settledBetsCount: state.userBets.filter(b => b.status === 'won' || b.status === 'lost').length,
+    }));
     
-    // Note: Win rate cannot be calculated from bankroll alone.
-    // This would require iterating through all settled bets.
-    // For this component, we'll focus on ROI.
+    const { roi, winRate, wins, losses } = kpis;
 
     const getRoiColor = () => {
         if (roi > 10) return 'text-brand-green';
@@ -26,8 +21,8 @@ export const BetPerformance: React.FC<BetPerformanceProps> = ({ bankroll }) => {
             <div className="bg-brand-bg-dark p-4 rounded-lg flex justify-around text-center">
                 <div>
                     <p className="text-xs text-brand-text-secondary">Win Rate</p>
-                    <p className="text-xl font-bold text-brand-text-primary">--%</p>
-                    <p className="text-xs text-brand-text-secondary">(coming soon)</p>
+                    <p className="text-xl font-bold text-brand-text-primary">{settledBetsCount > 0 ? `${winRate.toFixed(0)}%` : '--%'}</p>
+                    <p className="text-xs text-brand-text-secondary">{settledBetsCount > 0 ? `${wins}W - ${losses}L` : '(no settled bets)'}</p>
                 </div>
                  <div className="border-l border-brand-border"></div>
                 <div>

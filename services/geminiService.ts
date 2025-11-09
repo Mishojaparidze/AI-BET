@@ -1,42 +1,46 @@
-import { GoogleGenAI } from "@google/genai";
-import { type MatchPrediction } from '../types';
-
-// IMPORTANT: This service assumes that the API_KEY is provided via environment variables.
-// In a real-world scenario, this key should be handled securely and never exposed on the client-side.
-// For this project, we rely on the execution environment to provide `process.env.API_KEY`.
-let ai: GoogleGenAI | null = null;
-try {
-  ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-} catch (error)
-{
-  console.error("Failed to initialize GoogleGenAI. API_KEY might be missing.", error);
-}
-
+import { type MatchPrediction, type LiveMatchPrediction } from '../types';
+import { API_BASE_URL } from './config';
 
 /**
- * Queries the Gemini API with a user prompt and a set of match predictions as context.
+ * A helper function to securely POST data to the application's backend.
+ * This abstracts away the direct fetch call and standardizes error handling.
+ * @param endpoint The API endpoint to call (e.g., '/ai/chat').
+ * @param body The JSON payload to send.
+ * @returns The JSON response from the backend.
+ */
+const postToApi = async <T>(endpoint: string, body: object): Promise<T> => {
+    try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            // Try to parse a structured error message from the backend, otherwise fall back.
+            const errorData = await response.json().catch(() => ({ message: 'An unknown API error occurred.' }));
+            throw new Error(errorData.message || `API request failed: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error(`[API Error] Failed to POST to ${endpoint}:`, error);
+        // Re-throw the error to be handled by the calling function's catch block.
+        throw error;
+    }
+};
+
+/**
+ * Queries the backend service to get a response from the Gemini API.
+ * The backend is responsible for securely managing the API key and context.
  * @param userPrompt The user's question for the AI.
  * @param context A list of match predictions to ground the AI's response.
  * @returns The AI's generated text response.
  */
 export const getAiChatResponse = async (userPrompt: string, context: MatchPrediction[]): Promise<string> => {
-  if (!ai) {
-    return "The AI Analyst is currently unavailable. Please ensure the API key is configured correctly.";
-  }
-
-  const model = 'gemini-2.5-flash';
-  
-  // FIX: Separated system instruction from the main prompt to align with Gemini API best practices.
-  const systemInstruction = `You are BetGenius AI, a world-class sports betting analyst.
-- Your knowledge is strictly limited to the JSON data provided below containing sports match predictions. Do not use any external knowledge or make up information.
-- Your task is to analyze this data to answer the user's question in a clear, confident, and helpful tone.
-- If the user asks a question that cannot be answered by the provided data, politely state that you do not have the information.
-- Format your answers using clear headings, lists, and bold text for readability. Do not use Markdown tables.
-- Refer to Expected Value as "EV".
-- When asked to find matches, list the teams, the AI prediction, the odds, and a brief justification based on the data provided.
-- Do not invent new data or predictions.`;
-
-  // OPTIMIZATION: Create a simplified version of the context to reduce token count and improve performance.
+  // OPTIMIZATION: Create a simplified version of the context to reduce payload size.
   const simplifiedContext = context.map(p => ({
     id: p.id,
     teamA: p.teamA,
@@ -48,36 +52,48 @@ export const getAiChatResponse = async (userPrompt: string, context: MatchPredic
     expectedValue: p.aiAnalysis.expectedValue,
   }));
 
-  const stringifiedContext = JSON.stringify(simplifiedContext, null, 2);
-
-  const promptWithContext = `Here is the data for the available matches:
-\`\`\`json
-${stringifiedContext}
-\`\`\`
-
----
-
-User Question: "${userPrompt}"
-
-Your Analysis:
-`;
-
   try {
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: promptWithContext,
-      config: {
-        systemInstruction: systemInstruction
-      },
+    const response = await postToApi<{text: string}>('/ai/chat', {
+        prompt: userPrompt,
+        context: simplifiedContext,
     });
-    
     return response.text;
-
   } catch (error) {
-    console.error("Error fetching response from Gemini API:", error);
+    console.error("Error fetching chat response from backend:", error);
     if (error instanceof Error && error.message.includes('API key not valid')) {
        return "The AI Analyst could not be reached. The provided API key is invalid. Please check your configuration.";
     }
     return "Sorry, I encountered an error while analyzing the data. Please try again later.";
+  }
+};
+
+/**
+ * Queries the backend service to generate a critical counter-argument for a given prediction.
+ * @param prediction The match prediction to be challenged.
+ * @returns The AI's generated counter-argument as a text response.
+ */
+export const getAiChallengeResponse = async (prediction: MatchPrediction | LiveMatchPrediction): Promise<string> => {
+  // Create a detailed context from the prediction object to send to the backend.
+  const context = {
+    match: `${prediction.teamA} vs ${prediction.teamB}`,
+    league: prediction.league,
+    originalPrediction: prediction.prediction,
+    odds: prediction.odds,
+    confidence: prediction.confidence,
+    reasoning: prediction.reasoning,
+    analysis: prediction.aiAnalysis
+  };
+
+  try {
+    const response = await postToApi<{text: string}>('/ai/challenge', {
+        prediction: context,
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Error fetching challenge response from backend:", error);
+     if (error instanceof Error && error.message.includes('API key not valid')) {
+       return "The AI Analyst could not be reached. The provided API key is invalid. Please check your configuration.";
+    }
+    return "Sorry, I encountered an error while generating a counter-argument. Please try again later.";
   }
 };

@@ -4,23 +4,28 @@ import { ConfidenceBadge } from './ConfidenceBadge';
 import { MomentumTracker } from './MomentumTracker';
 import { ValueAlertBadge } from './ValueAlertBadge';
 import { subscribe, unsubscribe } from '../services/websocketService';
+import { useStore } from '../store/useStore';
+import { TeamLogo } from './TeamLogo';
 
 
 interface LiveMatchCardProps {
     match: LiveMatchPrediction;
-    onBetNow: (match: LiveMatchPrediction) => void;
-    onDetails: (match: LiveMatchPrediction) => void;
-    onUpdate: (match: LiveMatchPrediction) => void;
 }
 
-export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({ match, onBetNow, onDetails, onUpdate }) => {
+export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({ match }) => {
+    const { updateMatchData, setSelectedLiveMatchForBet, setSelectedMatch } = useStore(state => ({
+        updateMatchData: state.updateMatchData,
+        setSelectedLiveMatchForBet: state.setSelectedLiveMatchForBet,
+        setSelectedMatch: state.setSelectedMatch,
+    }));
+
     useEffect(() => {
         const callback = (updatedMatch: LiveMatchPrediction) => {
-            onUpdate(updatedMatch);
+            updateMatchData(updatedMatch);
         };
         subscribe(match.id, callback as any);
         return () => unsubscribe(match.id, callback as any);
-    }, [match.id, onUpdate]);
+    }, [match.id, updateMatchData]);
 
     const { teamA, teamB, league, confidence, scoreA, scoreB, matchTime, momentum, liveOdds, hasValueAlert, cashOutRecommendation } = match;
 
@@ -36,28 +41,33 @@ export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({ match, onBetNow, o
     };
 
     return (
-        <div className="bg-brand-bg-light border-2 border-brand-red/70 rounded-lg shadow-lg shadow-brand-red/10 transition-transform duration-300 hover:scale-[1.02]">
+        <div className="bg-brand-bg-light border-2 border-brand-red/70 rounded-lg shadow-lg shadow-brand-red/10 group transition-all duration-300 hover:shadow-2xl hover:shadow-brand-red/20">
             <div className="p-4">
                 <div className="flex justify-between items-start">
-                    <div>
-                        <p className="text-sm text-brand-text-secondary">{league}</p>
-                        <h3 className="text-lg font-bold text-brand-text-primary">{teamA} vs {teamB}</h3>
-                    </div>
+                    <p className="text-sm text-brand-text-secondary">{league}</p>
                     <ConfidenceBadge confidence={confidence} />
                 </div>
 
                 <div className="flex justify-between items-center mt-4">
-                    <div className="text-center">
-                        <p className="text-3xl font-bold">{scoreA}</p>
-                        <p className="text-sm font-semibold">{teamA}</p>
+                    <div className="text-center w-1/3">
+                        <TeamLogo teamName={teamA} size="w-10 h-10 mx-auto mb-2"/>
+                        <p className="text-lg font-bold">{scoreA}</p>
+                        <p className="text-sm font-semibold truncate">{teamA}</p>
                     </div>
                      <div className="text-center px-2">
-                        <p className="text-2xl font-mono font-bold text-brand-red animate-pulse">{matchTime}'</p>
+                         <div className="flex items-center justify-center gap-2">
+                             <span className="relative flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-red"></span>
+                            </span>
+                            <p className="text-2xl font-mono font-bold text-brand-red">{matchTime}'</p>
+                        </div>
                         <p className="text-xs text-brand-text-secondary uppercase">Live</p>
                     </div>
-                    <div className="text-center">
-                        <p className="text-3xl font-bold">{scoreB}</p>
-                        <p className="text-sm font-semibold">{teamB}</p>
+                    <div className="text-center w-1/3">
+                        <TeamLogo teamName={teamB} size="w-10 h-10 mx-auto mb-2"/>
+                        <p className="text-lg font-bold">{scoreB}</p>
+                        <p className="text-sm font-semibold truncate">{teamB}</p>
                     </div>
                 </div>
 
@@ -66,14 +76,14 @@ export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({ match, onBetNow, o
 
              <div className="border-t border-brand-border px-4 py-3 flex justify-between items-center bg-brand-bg-dark/50 rounded-b-lg">
                 <button 
-                    onClick={() => onDetails(match)}
+                    onClick={() => setSelectedMatch(match)}
                     className="text-sm font-semibold text-brand-text-secondary hover:text-brand-text-primary transition-colors"
                 >
                     Analysis
                 </button>
                 <button
-                    onClick={() => onBetNow(match)}
-                    className="px-4 py-2 rounded-md text-sm font-bold bg-brand-red text-white hover:bg-opacity-80 transition-colors flex items-center gap-2"
+                    onClick={() => setSelectedLiveMatchForBet(match)}
+                    className="px-4 py-2 rounded-md text-sm font-bold bg-brand-red text-white hover:bg-opacity-80 transition-colors flex items-center gap-2 transform active:scale-95"
                 >
                     Bet Now @ {liveOdds.toFixed(2)}
                     {hasValueAlert && <ValueAlertBadge />}

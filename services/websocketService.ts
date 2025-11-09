@@ -12,7 +12,8 @@ const isLiveMatch = (p: MatchPrediction | LiveMatchPrediction): p is LiveMatchPr
 
 export const initializeFeed = (initialPredictions: (MatchPrediction | LiveMatchPrediction)[]) => {
     if (intervalId) {
-        clearInterval(intervalId);
+        // FIX: Using window.clearInterval for consistency with window.setInterval.
+        window.clearInterval(intervalId);
     }
 
     matchDataStore = {};
@@ -23,7 +24,8 @@ export const initializeFeed = (initialPredictions: (MatchPrediction | LiveMatchP
     const matchIds = Object.keys(matchDataStore);
     if (matchIds.length === 0) return;
 
-    intervalId = setInterval(() => {
+    // FIX: Use window.setInterval to ensure it returns a number, not a NodeJS.Timeout object, resolving the type error.
+    intervalId = window.setInterval(() => {
         // Update a few random matches
         for (let i = 0; i < 5; i++) { 
             const randomId = matchIds[Math.floor(Math.random() * matchIds.length)];
