@@ -1,3 +1,4 @@
+
 // types.ts
 export enum MarketType {
     MatchWinner = 'Match Winner',
@@ -33,7 +34,6 @@ export enum Sentiment {
 
 export enum DataSourceStatus {
     Live = 'Live',
-    // FIX: Changed value from 'Error' to 'Pre-Match' to prevent duplicate enum values.
     PreMatch = 'Pre-Match',
     Error = 'Error',
 }
@@ -154,6 +154,14 @@ export interface LiveMatchPrediction extends MatchPrediction {
         reason: string | null;
     };
     hasValueAlert: boolean;
+    liveCommentary?: string; // NEW: Live play-by-play text
+}
+
+export interface CoachInsight {
+    summary: string;
+    strengths: string[];
+    weaknesses: string[];
+    actionableTip: string;
 }
 
 export interface HeadToHeadFixture {

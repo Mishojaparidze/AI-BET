@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MatchPrediction, LiveMatchPrediction, RiskLevel, HeadToHeadFixture, OddsHistoryPoint } from '../types';
 import * as api from '../services/apiService';
-import { getAiChallengeResponse } from '../services/geminiService';
+import { getAiChallengeResponse, generateMatchInsight } from '../services/geminiService';
 import { Accordion } from './Accordion';
 import { LiveIntelligenceFeed } from './LiveIntelligenceFeed';
 import { HeadToHeadAnalysis } from './HeadToHeadAnalysis';
@@ -10,23 +10,21 @@ import { LoadingSpinner } from './LoadingSpinner';
 import { useStore } from '../store/useStore';
 
 const XIcon: React.FC<{className?: string}> = ({className}) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill="#3A3A3C" stroke="none" /><path d="M15 9l-6 6M9 9l6 6" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" /></svg>
 )
-const PlusCircleIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-);
-const CheckCircleIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-);
 
+const SparklesIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3L9.5 8.5 4 11l5.5 2.5L12 19l2.5-5.5L20 11l-5.5-2.5z"/></svg>
+);
 
 export const PredictionModal: React.FC = () => {
-    const { match, setSelectedMatch, handleAddToTicket, getMarketsForMatch, ticketSelections } = useStore(state => ({
+    const { match, setSelectedMatch, handleAddToTicket, getMarketsForMatch, ticketSelections, updateMatchData } = useStore(state => ({
         match: state.selectedMatch,
         setSelectedMatch: state.setSelectedMatch,
         handleAddToTicket: state.handleAddToTicket,
         getMarketsForMatch: state.getMarketsForMatch,
         ticketSelections: state.ticketSelections,
+        updateMatchData: state.updateMatchData,
     }));
     
     const [activeTab, setActiveTab] = useState('analysis');
@@ -36,24 +34,55 @@ export const PredictionModal: React.FC = () => {
     const [isLoadingOdds, setIsLoadingOdds] = useState(false);
     const [challengeResponse, setChallengeResponse] = useState<string | null>(null);
     const [isChallenging, setIsChallenging] = useState(false);
+    const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
+    const [aiAnalyzed, setAiAnalyzed] = useState(false);
 
     const allMarketsForMatch = match ? getMarketsForMatch(match.matchId) : [];
 
-    const onClose = () => setSelectedMatch(null);
+    const onClose = () => {
+        setSelectedMatch(null);
+        setAiAnalyzed(false);
+    };
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                onClose();
-            }
+            if (event.key === 'Escape') onClose();
         };
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
 
+    // --- DEEP DIVE AI TRIGGER ---
+    useEffect(() => {
+        if (match && !('liveOdds' in match) && !aiAnalyzed && !isAiAnalyzing) {
+            const runDeepDive = async () => {
+                setIsAiAnalyzing(true);
+                try {
+                    const insight = await generateMatchInsight(match as MatchPrediction);
+                    // Merge the new insight with the existing match data
+                    if (insight && Object.keys(insight).length > 0) {
+                        const updatedMatch = {
+                            ...match,
+                            aiAnalysis: {
+                                ...match.aiAnalysis,
+                                ...insight
+                            }
+                        };
+                        updateMatchData(updatedMatch as MatchPrediction);
+                    }
+                } catch (e) {
+                    console.error("Deep dive failed", e);
+                } finally {
+                    setIsAiAnalyzing(false);
+                    setAiAnalyzed(true);
+                }
+            };
+            runDeepDive();
+        }
+    }, [match, aiAnalyzed, isAiAnalyzing, updateMatchData]);
+
      useEffect(() => {
         if (!match) return;
-        // Pre-emptively switch to 'analysis' if 'All Markets' is not available (e.g. for live matches where it's not implemented yet)
         if (activeTab === 'markets' && allMarketsForMatch.length <= 1) {
             setActiveTab('analysis');
         }
@@ -73,14 +102,14 @@ export const PredictionModal: React.FC = () => {
         }
     }, [activeTab, h2hData, oddsHistory, match, allMarketsForMatch.length]);
 
-    // Reset state when match changes
     useEffect(() => {
         setActiveTab('analysis');
         setH2hData(null);
         setOddsHistory(null);
         setChallengeResponse(null);
         setIsChallenging(false);
-    }, [match]);
+        setAiAnalyzed(false); // Reset for new match
+    }, [match?.id]);
 
     if (!match) return null;
 
@@ -89,198 +118,187 @@ export const PredictionModal: React.FC = () => {
     const handleChallengeClick = async () => {
         if (!match || isChallenging) return;
         setIsChallenging(true);
-        setChallengeResponse(null); // Clear previous response
+        setChallengeResponse(null);
         try {
             const response = await getAiChallengeResponse(match);
             setChallengeResponse(response);
         } catch (error) {
             console.error("Failed to get challenge response:", error);
-            setChallengeResponse("An unexpected error occurred while generating the counter-argument.");
+            setChallengeResponse("An unexpected error occurred.");
         } finally {
             setIsChallenging(false);
         }
     };
-
+    
     const renderDecisionFlow = () => (
         <div className="space-y-2">
-            {aiAnalysis.decisionFlow.map(step => (
-                 <div key={step.step} className={`p-3 rounded-md flex items-center justify-between text-sm ${step.status === 'pass' ? 'bg-brand-green/10' : 'bg-brand-red/10'}`}>
+            {aiAnalysis.decisionFlow.map((step, i) => (
+                 <div key={i} className={`p-3 rounded-xl flex items-center justify-between text-sm ${step.status === 'pass' ? 'bg-brand-green/10' : step.status === 'fail' ? 'bg-brand-red/10' : 'bg-brand-bg-dark'}`}>
                     <div>
-                        <p className={`font-bold ${step.status === 'pass' ? 'text-brand-green' : 'text-brand-red'}`}>{step.step}</p>
+                        <p className={`font-bold ${step.status === 'pass' ? 'text-brand-green' : step.status === 'fail' ? 'text-brand-red' : 'text-brand-text-secondary'}`}>{step.step}</p>
                         <p className="text-xs text-brand-text-secondary">{step.reason}</p>
                     </div>
-                     <span className={`px-2 py-0.5 text-xs font-bold rounded-full border ${step.status === 'pass' ? 'bg-brand-green/20 text-brand-green border-brand-green/30' : 'bg-brand-red/20 text-brand-red border-brand-red/30'}`}>{step.status}</span>
                 </div>
             ))}
         </div>
     );
-    
-    const riskStyles = {
-        [RiskLevel.Conservative]: "bg-sky-500/20 text-sky-400",
-        [RiskLevel.Moderate]: "bg-brand-yellow/20 text-brand-yellow",
-        [RiskLevel.Aggressive]: "bg-brand-red/20 text-brand-red",
-    }
 
     const renderAnalysisTab = () => (
         <div className="space-y-6">
+            {isAiAnalyzing ? (
+                 <div className="bg-brand-bg-elevated rounded-xl p-8 flex flex-col items-center justify-center text-center animate-pulse">
+                    <SparklesIcon className="w-8 h-8 text-brand-blue mb-3 animate-spin" />
+                    <p className="font-bold text-brand-text-primary">Consulting AI Engine...</p>
+                    <p className="text-xs text-brand-text-secondary mt-1">Analyzing matchups, form, and market movements.</p>
+                 </div>
+            ) : (
+                <div className="bg-brand-bg-elevated rounded-xl p-4 animate-fade-in">
+                     <div className="flex items-center gap-2 mb-2">
+                        <SparklesIcon className="w-4 h-4 text-brand-yellow" />
+                        <span className="text-xs font-bold text-brand-yellow uppercase tracking-wide">AI Deep Dive</span>
+                     </div>
+                     <p className="text-[15px] text-brand-text-primary leading-relaxed">{aiAnalysis.bettingAngle}</p>
+                     <div className="mt-3 flex items-center gap-2">
+                        <span className="text-xs text-brand-text-secondary font-medium uppercase">Risk Level</span>
+                        <span className={`px-2 py-0.5 text-xs font-bold rounded-md ${aiAnalysis.riskLevel === RiskLevel.Conservative ? 'text-brand-blue bg-brand-blue/10' : aiAnalysis.riskLevel === RiskLevel.Moderate ? 'text-brand-yellow bg-brand-yellow/10' : 'text-brand-red bg-brand-red/10'}`}>{aiAnalysis.riskLevel}</span>
+                     </div>
+                </div>
+            )}
+
             <Accordion title="Key Factors" defaultOpen>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-brand-green/10 p-4 rounded-lg">
-                        <h4 className="font-bold text-brand-green mb-2">Key Positives</h4>
-                        <ul className="list-disc list-inside space-y-1 text-sm text-brand-text-secondary">
-                            {aiAnalysis.keyPositives.map((p, i) => <li key={i}>{p}</li>)}
-                        </ul>
-                    </div>
-                     <div className="bg-brand-red/10 p-4 rounded-lg">
-                        <h4 className="font-bold text-brand-red mb-2">Key Negatives</h4>
-                        <ul className="list-disc list-inside space-y-1 text-sm text-brand-text-secondary">
-                            {aiAnalysis.keyNegatives.map((p, i) => <li key={i}>{p}</li>)}
-                        </ul>
-                    </div>
+                <div className="space-y-3">
+                    {aiAnalysis.keyPositives.map((p, i) => (
+                        <div key={`pos-${i}`} className="flex gap-3 items-start">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-green mt-1.5"></div>
+                            <p className="text-sm text-brand-text-primary">{p}</p>
+                        </div>
+                    ))}
+                    {aiAnalysis.keyNegatives.map((p, i) => (
+                        <div key={`neg-${i}`} className="flex gap-3 items-start">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-red mt-1.5"></div>
+                            <p className="text-sm text-brand-text-primary">{p}</p>
+                        </div>
+                    ))}
                 </div>
             </Accordion>
-             <Accordion title="Betting Angle & Risk Assessment" defaultOpen>
-                 <p className="text-sm text-brand-text-secondary mb-4 p-4 bg-brand-bg-dark rounded-md">{aiAnalysis.bettingAngle}</p>
-                 <div className="flex justify-between items-center bg-brand-bg-dark p-4 rounded-lg">
-                    <span className="text-brand-text-secondary font-semibold">AI Risk Level</span>
-                    <span className={`px-3 py-1 text-sm font-bold rounded-full ${riskStyles[aiAnalysis.riskLevel]}`}>{aiAnalysis.riskLevel}</span>
-                 </div>
-            </Accordion>
-            <Accordion title="AI Decision Flow">
+            
+            <Accordion title="AI Decision Logic">
                 {renderDecisionFlow()}
             </Accordion>
-             <Accordion title="Live Intelligence Feed">
-                <LiveIntelligenceFeed sources={aiAnalysis.dataSources} />
-            </Accordion>
 
-            <div className="border-t border-brand-border pt-6 mt-6">
+            <div className="pt-2">
                 {isChallenging ? (
                     <LoadingSpinner />
                 ) : challengeResponse ? (
-                    <div className="animate-fade-in space-y-3">
-                        <h3 className="text-lg font-bold text-brand-yellow">AI's Second Opinion</h3>
+                    <div className="animate-fade-in bg-brand-bg-elevated p-4 rounded-xl">
+                        <h3 className="text-sm font-bold text-brand-yellow mb-2">Skeptic's View</h3>
                         <div 
-                            className="bg-brand-bg-dark p-4 rounded-lg prose prose-sm prose-invert max-w-none" 
+                            className="text-sm text-brand-text-primary leading-relaxed" 
                             dangerouslySetInnerHTML={{ __html: challengeResponse.replace(/\n/g, '<br />') }}
                         />
                     </div>
                 ) : (
-                    <div className="text-center">
-                        <p className="text-sm text-brand-text-secondary mb-3">Want a different perspective?</p>
-                        <button 
-                            onClick={handleChallengeClick}
-                            className="bg-brand-yellow/20 text-brand-yellow font-bold px-6 py-2 rounded-lg hover:bg-brand-yellow/30 transition-colors flex items-center gap-2 mx-auto"
-                        >
-                             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                            Challenge AI Prediction
-                        </button>
-                    </div>
+                    <button 
+                        onClick={handleChallengeClick}
+                        className="w-full py-3 rounded-xl bg-brand-bg-elevated text-brand-yellow font-semibold text-sm hover:bg-brand-border transition-colors"
+                    >
+                        Challenge this Prediction
+                    </button>
                 )}
             </div>
         </div>
     );
 
-    const renderH2HTab = () => {
-        if (isLoadingH2H) return <LoadingSpinner />;
-        if (!h2hData) return <p>Could not load Head-to-Head data.</p>;
-        return <HeadToHeadAnalysis data={h2hData} teamA={match.teamA} teamB={match.teamB} />;
-    };
+    // Simplified H2H and Odds renderers for brevity in this example, keeping logic same
+    const renderH2HTab = () => isLoadingH2H ? <LoadingSpinner /> : !h2hData ? <p>No Data</p> : <HeadToHeadAnalysis data={h2hData} teamA={match.teamA} teamB={match.teamB} />;
+    const renderOddsTab = () => isLoadingOdds ? <LoadingSpinner /> : !oddsHistory ? <p>No Data</p> : <OddsHistoryChart data={oddsHistory} teamA={match.teamA} teamB={match.teamB} />;
     
-    const renderOddsTab = () => {
-        if (isLoadingOdds) return <LoadingSpinner />;
-        if (!oddsHistory) return <p>Could not load Odds History data.</p>;
-        return <OddsHistoryChart data={oddsHistory} teamA={match.teamA} teamB={match.teamB} />;
-    };
-
-    const renderMarketsTab = () => {
-        return (
-            <div className="space-y-3">
-                {allMarketsForMatch.map(market => {
-                    const isSelected = ticketSelections.some(s => s.id === market.id);
-                    return (
-                        <div key={market.id} className="bg-brand-bg-dark p-4 rounded-lg flex justify-between items-center">
-                            <div>
-                                <p className="font-bold text-brand-text-primary">{market.prediction}</p>
-                                <p className="text-xs text-brand-text-secondary">{market.marketType}</p>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <span className="text-xl font-bold text-brand-yellow">{market.odds.toFixed(2)}</span>
-                                 <button
-                                    onClick={() => handleAddToTicket(market)}
-                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors flex items-center gap-2 ${
-                                        isSelected 
-                                        ? 'bg-brand-green/20 text-brand-green' 
-                                        : 'bg-brand-green/80 text-white hover:bg-brand-green'
-                                    }`}
-                                >
-                                    {isSelected ? <CheckCircleIcon className="w-4 h-4"/> : <PlusCircleIcon className="w-4 h-4"/>}
-                                    {isSelected ? 'Added' : 'Add'}
-                                </button>
-                            </div>
+    const renderMarketsTab = () => (
+        <div className="space-y-2">
+            {allMarketsForMatch.map(market => {
+                const isSelected = ticketSelections.some(s => s.id === market.id);
+                return (
+                    <div key={market.id} className="bg-brand-bg-elevated p-4 rounded-xl flex justify-between items-center active:scale-[0.99] transition-transform" onClick={() => handleAddToTicket(market)}>
+                        <div>
+                            <p className="font-medium text-brand-text-primary">{market.prediction}</p>
+                            <p className="text-xs text-brand-text-secondary">{market.marketType}</p>
                         </div>
-                    );
-                })}
-            </div>
-        )
-    }
-    
+                        <div className={`flex items-center justify-center px-3 py-1.5 rounded-lg font-bold text-sm transition-colors ${isSelected ? 'bg-brand-green text-white' : 'bg-brand-blue/10 text-brand-blue'}`}>
+                            {market.odds.toFixed(2)}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+
     const tabs = [
-        { id: 'analysis', label: 'AI Analysis' },
-        ...(allMarketsForMatch.length > 1 && !('liveOdds' in match) ? [{ id: 'markets', label: 'All Markets' }] : []),
-        { id: 'h2h', label: 'Head-to-Head' },
-        { id: 'odds', label: 'Odds History' }
+        { id: 'analysis', label: 'Analysis' },
+        ...(allMarketsForMatch.length > 1 && !('liveOdds' in match) ? [{ id: 'markets', label: 'Markets' }] : []),
+        { id: 'h2h', label: 'H2H' },
+        { id: 'odds', label: 'Odds' }
     ];
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-      <div 
-        className="bg-brand-bg-light rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-modal-enter"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="p-6 border-b border-brand-border flex justify-between items-start">
+    <div className="fixed inset-0 z-50 flex justify-center items-end sm:items-center sm:p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
+
+      {/* Modal/Sheet */}
+      <div className="relative w-full max-w-lg bg-brand-bg-light rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-modal-enter">
+        
+        {/* Drag Handle (Mobile) */}
+        <div className="w-full flex justify-center pt-3 pb-1 sm:hidden" onClick={onClose}>
+            <div className="w-12 h-1.5 bg-brand-border rounded-full"></div>
+        </div>
+
+        <header className="px-6 py-4 flex justify-between items-start border-b border-brand-border/50">
             <div>
-                 <p className="text-sm text-brand-text-secondary">{match.league}</p>
-                 <h2 className="text-2xl font-bold text-brand-text-primary">{match.teamA} vs {match.teamB}</h2>
-                 <p className="text-brand-text-secondary mt-1">{new Date(match.matchDate).toLocaleString()}</p>
+                 <p className="text-xs font-semibold text-brand-text-secondary uppercase tracking-wide">{match.league}</p>
+                 <h2 className="text-xl font-bold text-brand-text-primary mt-0.5">{match.teamA} <span className="text-brand-text-secondary font-normal">vs</span> {match.teamB}</h2>
             </div>
-            <button onClick={onClose} className="p-2 rounded-full text-brand-text-secondary hover:bg-brand-border"><XIcon className="w-6 h-6"/></button>
+            <button onClick={onClose} className="hidden sm:block p-1"><XIcon className="w-8 h-8"/></button>
         </header>
         
+        {/* Tabs */}
+        <div className="px-6 pt-4 pb-2 flex gap-4 overflow-x-auto hide-scrollbar border-b border-brand-border/50">
+            {tabs.map(tab => (
+                <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`pb-2 text-sm font-semibold whitespace-nowrap transition-colors relative ${
+                        activeTab === tab.id ? 'text-brand-text-primary' : 'text-brand-text-secondary'
+                    }`}
+                >
+                    {tab.label}
+                    {activeTab === tab.id && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-blue rounded-full"></div>
+                    )}
+                </button>
+            ))}
+        </div>
+
         <main className="p-6 overflow-y-auto">
-            <div className="mb-6 bg-brand-bg-dark p-1.5 rounded-lg flex items-center gap-2 max-w-max">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${
-                            activeTab === tab.id
-                                ? 'bg-brand-bg-light text-brand-text-primary shadow-sm'
-                                : 'text-brand-text-secondary hover:text-brand-text-primary'
-                        }`}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
             {activeTab === 'analysis' && renderAnalysisTab()}
             {activeTab === 'markets' && renderMarketsTab()}
             {activeTab === 'h2h' && renderH2HTab()}
             {activeTab === 'odds' && renderOddsTab()}
         </main>
         
-        <footer className="p-6 border-t border-brand-border bg-brand-bg-dark/50 rounded-b-xl flex justify-between items-center">
-            <div>
-                <p className="font-bold text-lg">{match.prediction}</p>
-                <p className="text-sm text-brand-text-secondary">Current Odds: <span className="font-bold text-brand-yellow text-lg">{('liveOdds' in match ? match.liveOdds : match.odds).toFixed(2)}</span></p>
-            </div>
-             {!('liveOdds' in match) && (
-                 <button 
-                    onClick={() => handleAddToTicket(match as MatchPrediction)}
-                    className="bg-brand-green text-white font-bold px-6 py-3 rounded-lg hover:bg-opacity-90 transition-colors"
-                >
-                    Add to Ticket
-                </button>
-             )}
+        {/* Footer Action */}
+        <footer className="p-4 bg-brand-bg-light/90 backdrop-blur-xl border-t border-brand-border/50 pb-safe-bottom">
+            <button 
+                onClick={() => {
+                    handleAddToTicket(match as MatchPrediction);
+                    onClose();
+                }}
+                className="w-full bg-brand-blue text-white font-bold py-3.5 rounded-xl active:scale-[0.98] transition-transform shadow-lg shadow-brand-blue/20 flex justify-center items-center gap-2"
+            >
+                <span>Add to Slip</span>
+                <span className="bg-white/20 px-2 py-0.5 rounded text-sm">
+                    {('liveOdds' in match ? match.liveOdds : match.odds).toFixed(2)}
+                </span>
+            </button>
         </footer>
       </div>
     </div>

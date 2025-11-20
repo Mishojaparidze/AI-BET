@@ -73,27 +73,60 @@ const createMockService = () => {
     const calculateEV = (p: number, o: number) => (p * (o - 1)) - (1 - p);
     const calculateKellyStake = (p: number, o: number, f = 0.25) => { if (o <= 1) return 0; const k = ( (o-1) * p - (1-p) ) / (o-1); return Math.min(Math.max(0, k * f) * 100, 10); };
     
-    // --- Data Generation (from original file) ---
+    // --- Data Generation (Expanded Sports) ---
     const teamData: Record<string, { name: string; id: number; league: string; players?: { name: string; position: string; }[] }[]> = { 
-        "Soccer": [ { name: 'Arsenal', id: 42, league: 'Premier League', players: [{ name: 'Bukayo Saka', position: 'FW'}] }, { name: 'Tottenham Hotspur', id: 47, league: 'Premier League', players: [{ name: 'Son Heung-min', position: 'FW'}] }, { name: 'Real Madrid', id: 541, league: 'La Liga' }, { name: 'Barcelona', id: 529, league: 'La Liga' }, { name: 'Borussia Dortmund', id: 165, league: 'Bundesliga' }, { name: 'Bayern Munich', id: 157, league: 'Bundesliga' }, { name: 'LAFC', id: 601, league: 'MLS' }, { name: 'LA Galaxy', id: 602, league: 'MLS' }, { name: 'Inter Milan', id: 505, league: 'Serie A' }, { name: 'AC Milan', id: 489, league: 'Serie A' }, { name: 'PSG', id: 85, league: 'Ligue 1' }, { name: 'Marseille', id: 81, league: 'Ligue 1' }, ], 
+        "Soccer": [ 
+            { name: 'Arsenal', id: 42, league: 'Premier League', players: [{ name: 'Bukayo Saka', position: 'FW'}] }, 
+            { name: 'Tottenham Hotspur', id: 47, league: 'Premier League', players: [{ name: 'Son Heung-min', position: 'FW'}] }, 
+            { name: 'Real Madrid', id: 541, league: 'La Liga', players: [{ name: 'Vinicius Jr', position: 'FW' }] }, 
+            { name: 'Barcelona', id: 529, league: 'La Liga', players: [{ name: 'Lamine Yamal', position: 'FW' }] }, 
+            { name: 'Man City', id: 501, league: 'Premier League', players: [{ name: 'Erling Haaland', position: 'FW' }] },
+            { name: 'Liverpool', id: 502, league: 'Premier League', players: [{ name: 'Mo Salah', position: 'FW' }] }
+        ], 
         "Basketball": [ 
-            { name: 'Denver Nuggets', id: 10, league: 'NBA Playoffs', players: [{ name: 'Nikola Jokic', position: 'C' }, { name: 'Jamal Murray', position: 'PG' }] }, 
-            { name: 'Minnesota Timberwolves', id: 11, league: 'NBA Playoffs', players: [{ name: 'Anthony Edwards', position: 'SG' }, { name: 'Karl-Anthony Towns', position: 'C' }] }, 
-            { name: 'Olympiacos', id: 1101, league: 'EuroLeague', players: [{ name: 'Kostas Sloukas', position: 'PG' }, { name: 'Sasha Vezenkov', position: 'PF' }] }, 
-            { name: 'Panathinaikos', id: 1102, league: 'EuroLeague', players: [{ name: 'Marius Grigonis', position: 'SG' }, { name: 'Georgios Papagiannis', position: 'C' }] }, 
+            { name: 'Denver Nuggets', id: 10, league: 'NBA', players: [{ name: 'Nikola Jokic', position: 'C' }] }, 
+            { name: 'Boston Celtics', id: 11, league: 'NBA', players: [{ name: 'Jayson Tatum', position: 'SF' }] }, 
+            { name: 'Dallas Mavericks', id: 12, league: 'NBA', players: [{ name: 'Luka Doncic', position: 'PG' }] }, 
+            { name: 'LA Lakers', id: 13, league: 'NBA', players: [{ name: 'LeBron James', position: 'SF' }] }, 
         ], 
         "American Football": [ 
-            { name: 'Green Bay Packers', id: 201, league: 'NFL', players: [{ name: 'Jordan Love', position: 'QB' }, { name: 'Christian Watson', position: 'WR' }] }, 
-            { name: 'Chicago Bears', id: 202, league: 'NFL', players: [{ name: 'Caleb Williams', position: 'QB' }, { name: 'DJ Moore', position: 'WR' }] }, 
-            { name: 'Alabama', id: 2001, league: 'NCAA Football', players: [{ name: 'Jalen Milroe', position: 'QB' }, { name: 'Kool-Aid McKinstry', position: 'CB' }] }, 
-            { name: 'Georgia', id: 2002, league: 'NCAA Football', players: [{ name: 'Carson Beck', position: 'QB' }, { name: 'Brock Bowers', position: 'TE' }] }, 
+            { name: 'Kansas City Chiefs', id: 201, league: 'NFL', players: [{ name: 'Patrick Mahomes', position: 'QB' }] }, 
+            { name: 'San Francisco 49ers', id: 202, league: 'NFL', players: [{ name: 'Christian McCaffrey', position: 'RB' }] }, 
+            { name: 'Detroit Lions', id: 203, league: 'NFL', players: [{ name: 'Jared Goff', position: 'QB' }] }, 
+            { name: 'Baltimore Ravens', id: 204, league: 'NFL', players: [{ name: 'Lamar Jackson', position: 'QB' }] }, 
         ], 
-        "Hockey": [ { name: 'Toronto Maple Leafs', id: 301, league: 'NHL Playoffs' }, { name: 'Boston Bruins', id: 302, league: 'NHL Playoffs' }, ] 
+        "Tennis": [
+            { name: 'Jannik Sinner', id: 401, league: 'ATP' },
+            { name: 'Carlos Alcaraz', id: 402, league: 'ATP' },
+            { name: 'Novak Djokovic', id: 403, league: 'ATP' },
+            { name: 'Daniil Medvedev', id: 404, league: 'ATP' },
+            { name: 'Iga Swiatek', id: 405, league: 'WTA' },
+            { name: 'Aryna Sabalenka', id: 406, league: 'WTA' }
+        ],
+        "MMA": [
+            { name: 'Islam Makhachev', id: 501, league: 'UFC' },
+            { name: 'Dustin Poirier', id: 502, league: 'UFC' },
+            { name: 'Jon Jones', id: 503, league: 'UFC' },
+            { name: 'Tom Aspinall', id: 504, league: 'UFC' },
+            { name: 'Sean O\'Malley', id: 505, league: 'UFC' },
+            { name: 'Merab Dvalishvili', id: 506, league: 'UFC' }
+        ],
+        "Baseball": [
+            { name: 'LA Dodgers', id: 601, league: 'MLB', players: [{name: 'Shohei Ohtani', position: 'DH'}] },
+            { name: 'NY Yankees', id: 602, league: 'MLB', players: [{name: 'Aaron Judge', position: 'OF'}] },
+            { name: 'Philadelphia Phillies', id: 603, league: 'MLB', players: [{name: 'Bryce Harper', position: '1B'}] },
+            { name: 'Baltimore Orioles', id: 604, league: 'MLB', players: [{name: 'Gunnar Henderson', position: 'SS'}] }
+        ],
+        "Formula 1": [
+            { name: 'Max Verstappen', id: 701, league: 'F1' },
+            { name: 'Lando Norris', id: 702, league: 'F1' },
+            { name: 'Lewis Hamilton', id: 703, league: 'F1' },
+            { name: 'Charles Leclerc', id: 704, league: 'F1' }
+        ]
     };
     const allTeams = Object.values(teamData).flat().map(t => t.name);
     const historicalMatches = generateHistoricalData(allTeams, 500);
 
-// FIX: Added explicit return type `MatchPrediction` to ensure type safety for nested properties like `decisionFlow`.
     const generatePrediction = (matchInfo: any, predictionData: any): MatchPrediction => {
         const { homeTeam, awayTeam, matchDate, homeStats, awayStats, sport } = matchInfo;
         const { prediction, marketType, marketValue, probability } = predictionData;
@@ -117,8 +150,8 @@ const createMockService = () => {
             matchDate: matchDate.toISOString(),
             prediction, marketType, marketValue,
             confidence, odds,
-            reasoning: "AI analysis highlights a statistical edge based on recent form and historical matchups.",
-            aiAnalysis: { keyPositives: ["Strong offensive metrics", "Favorable historical trend in this matchup"], keyNegatives: ["Opponent has a solid defensive record", "Key player is questionable"], confidenceBreakdown: [ { model: 'XGBoost', weight: 40, color: 'bg-green-500'}, { model: 'LSTM Network', weight: 30, color: 'bg-sky-500'}, { model: 'Ensemble', weight: 30, color: 'bg-purple-500'}], expectedValue: parseFloat(expectedValue.toFixed(1)), estimatedWinProbability: probability, kellyStakePercentage: parseFloat(kellyStakePercentage.toFixed(1)), marketInsights: { sharpMoneyAlignment: Math.random() > 0.4, publicBettingPercentage: Math.floor(Math.random() * 40) + 50, significantOddsMovement, oddsMovementDirection }, riskLevel: kellyStakePercentage > 4 ? RiskLevel.Aggressive : kellyStakePercentage > 2 ? RiskLevel.Moderate : RiskLevel.Conservative, decisionFlow: [ { step: 'Data Quality', status: 'pass', reason: 'Recent stats available.' }, { step: 'Model Agreement', status: 'pass', reason: 'High consensus for outcome.' }, { step: 'Value Check (EV > 5%)', status: expectedValue > 5 ? 'pass' : 'fail', reason: `Calculated EV is ${expectedValue.toFixed(1)}%` }, { step: 'Final Output', status: 'pass', reason: 'Recommendation generated.' } ], sentimentAnalysis: { overallSentiment: Sentiment.Neutral, newsSummary: "Pundits are expecting a close game, but note the home team's recent strong performances.", socialMediaKeywords: ["#sports", "#betting", "#analysis"] }, dataSources: [ { category: "Team & Player Stats", provider: "Sportradar", status: DataSourceStatus.PreMatch, metrics: [{name: "Avg. Score For", value: `${homeStats.avgGoalsScored.toFixed(1)} - ${awayStats.avgGoalsScored.toFixed(1)}`}] }, { category: "Live Odds & Market", provider: "Betfair", status: DataSourceStatus.PreMatch, metrics: [{name: "Implied Probability", value: `${(1/odds*100).toFixed(1)}%`}] } ], formAnalysis: { teamA: homeStats.formString, teamB: awayStats.formString }, playerAnalysis: [{ name: 'Key Players', team: 'A', impact: 'Star performers will be crucial to the outcome.' }], bettingAngle: "The model identifies an edge based on recent performance metrics that the market seems to have overlooked.", gameScenario: { narrative: "A competitive match is expected, with the home team likely controlling the pace early on.", keyEvents: [ { eventType: 'Key Score', likelihood: 'High', description: 'The first score will be critical in setting the match tempo.' }, ] }, statisticalProfile: { teamA: { avgGoalsScored: homeStats.avgGoalsScored, avgGoalsConceded: homeStats.avgGoalsConceded, daysSinceLastMatch: 7 }, teamB: { avgGoalsScored: awayStats.avgGoalsScored, avgGoalsConceded: awayStats.avgGoalsConceded, daysSinceLastMatch: 7 }, } }
+            reasoning: "Initial statistical model scan. Click for deep AI analysis.",
+            aiAnalysis: { keyPositives: ["Statistical Edge identified", "Market inefficiency detected"], keyNegatives: ["Volatility high"], confidenceBreakdown: [ { model: 'Base Model', weight: 100, color: 'bg-gray-500'}], expectedValue: parseFloat(expectedValue.toFixed(1)), estimatedWinProbability: probability, kellyStakePercentage: parseFloat(kellyStakePercentage.toFixed(1)), marketInsights: { sharpMoneyAlignment: Math.random() > 0.4, publicBettingPercentage: Math.floor(Math.random() * 40) + 50, significantOddsMovement, oddsMovementDirection }, riskLevel: kellyStakePercentage > 4 ? RiskLevel.Aggressive : kellyStakePercentage > 2 ? RiskLevel.Moderate : RiskLevel.Conservative, decisionFlow: [ { step: 'Screening', status: 'pass', reason: 'Passed initial filters' } ], sentimentAnalysis: { overallSentiment: Sentiment.Neutral, newsSummary: "Loading AI Context...", socialMediaKeywords: [] }, dataSources: [], formAnalysis: { teamA: homeStats?.formString || 'N/A', teamB: awayStats?.formString || 'N/A' }, playerAnalysis: [], bettingAngle: "AI Model initialized. Open details for full deep-dive.", gameScenario: { narrative: "Pending AI generation...", keyEvents: [] }, statisticalProfile: { teamA: { avgGoalsScored: homeStats?.avgGoalsScored || 0, avgGoalsConceded: homeStats?.avgGoalsConceded || 0, daysSinceLastMatch: 7 }, teamB: { avgGoalsScored: awayStats?.avgGoalsScored || 0, avgGoalsConceded: awayStats?.avgGoalsConceded || 0, daysSinceLastMatch: 7 }, } }
         };
     };
 
@@ -127,11 +160,19 @@ const createMockService = () => {
         let dayOffset = 0;
         for (const sport in teamData) {
             const teams = teamData[sport];
-            for (let i = 0; i < teams.length; i += 2) {
+            // For individual sports (Tennis, MMA, F1), we pair them differently or just pick random head-to-heads
+            const step = sport === 'Formula 1' ? 2 : 2; 
+            
+            for (let i = 0; i < teams.length; i += step) {
                 if (i + 1 >= teams.length) continue;
                 const homeTeam = teams[i], awayTeam = teams[i+1];
-                const matchDate = new Date(); matchDate.setDate(matchDate.getDate() + dayOffset); matchDate.setHours(matchDate.getHours() + (i * 2));
-                const { homeProbability, drawProbability, awayProbability, homeStats, awayStats, totalGoals } = predictMatch(homeTeam.name, awayTeam.name, historicalMatches);
+                const matchDate = new Date(); matchDate.setDate(matchDate.getDate() + dayOffset); matchDate.setHours(matchDate.getHours() + (i * 2) + 12);
+                
+                // Use simpler stats for non-team sports
+                const isTeamSport = ['Soccer', 'Basketball', 'American Football', 'Hockey', 'Baseball'].includes(sport);
+                const { homeProbability, drawProbability, awayProbability, homeStats, awayStats, totalGoals } = isTeamSport 
+                    ? predictMatch(homeTeam.name, awayTeam.name, historicalMatches)
+                    : { homeProbability: 0.55, drawProbability: 0, awayProbability: 0.45, homeStats: null, awayStats: null, totalGoals: 0 };
                 
                 const matchInfo = { homeTeam, awayTeam, matchDate, homeStats, awayStats, sport };
                 
@@ -139,30 +180,41 @@ const createMockService = () => {
                 // 1. Match Winner (always generate)
                 let winnerPrediction;
                 if (homeProbability > awayProbability && homeProbability > drawProbability) {
-                    winnerPrediction = { prediction: `${homeTeam.name} to Win`, marketType: MarketType.MatchWinner, probability: homeProbability };
+                    winnerPrediction = { prediction: `${homeTeam.name}`, marketType: MarketType.MatchWinner, probability: homeProbability };
                 } else if (awayProbability > homeProbability && awayProbability > drawProbability) {
-                    winnerPrediction = { prediction: `${awayTeam.name} to Win`, marketType: MarketType.MatchWinner, probability: awayProbability };
+                    winnerPrediction = { prediction: `${awayTeam.name}`, marketType: MarketType.MatchWinner, probability: awayProbability };
                 } else {
                     winnerPrediction = { prediction: 'Draw', marketType: MarketType.MatchWinner, probability: drawProbability };
                 }
                 predictions.push(generatePrediction(matchInfo, winnerPrediction));
 
-                // 2. Total Goals / Spreads (for relevant sports)
+                // 2. Sport Specific Markets
                 if (sport === 'Soccer') {
                     const marketValue = 2.5;
                     const overProbability = Math.min(0.9, totalGoals / (marketValue * 2));
-                    const totalGoalsPrediction = { prediction: `Over ${marketValue} Goals`, marketType: MarketType.TotalGoals, marketValue, probability: overProbability };
-                    predictions.push(generatePrediction(matchInfo, totalGoalsPrediction));
+                    predictions.push(generatePrediction(matchInfo, { prediction: `Over ${marketValue} Goals`, marketType: MarketType.TotalGoals, marketValue, probability: overProbability }));
                 } else if (sport === 'Basketball' || sport === 'American Football') {
-                     const isHomeFavorite = homeProbability > awayProbability;
+                    const isHomeFavorite = homeProbability > awayProbability;
                     const spread = isHomeFavorite ? -(Math.floor(Math.random() * 5) + 2.5) : (Math.floor(Math.random() * 5) + 2.5);
-                    const spreadPrediction = {
+                    predictions.push(generatePrediction(matchInfo, {
                         prediction: `${isHomeFavorite ? homeTeam.name : awayTeam.name} ${spread > 0 ? '+' : ''}${spread}`,
                         marketType: MarketType.PointSpread,
                         marketValue: spread,
-                        probability: 0.52 + (Math.random() * 0.1) // Simulate ~52% chance to cover
-                    };
-                    predictions.push(generatePrediction(matchInfo, spreadPrediction));
+                        probability: 0.52 + (Math.random() * 0.1)
+                    }));
+                } else if (sport === 'Tennis') {
+                     predictions.push(generatePrediction(matchInfo, {
+                        prediction: `${homeTeam.name} -1.5 Sets`,
+                        marketType: MarketType.PointSpread, // Reusing PointSpread for Set Handicap
+                        marketValue: -1.5,
+                        probability: 0.45
+                    }));
+                } else if (sport === 'MMA') {
+                     predictions.push(generatePrediction(matchInfo, {
+                        prediction: `Fight to go the Distance: No`,
+                        marketType: MarketType.TotalGoals, // Reusing type for duration
+                        probability: 0.65
+                    }));
                 }
                 
                 // 3. Player Props (if players exist)
@@ -184,6 +236,10 @@ const createMockService = () => {
                         propType = 'to Score Anytime';
                         line = 0.5;
                          predictionString = `${player.name} ${propType}`;
+                    } else if (sport === 'Baseball') {
+                        propType = 'Home Run';
+                        line = 0.5;
+                        predictionString = `${player.name} to Hit a ${propType}`;
                     }
                     
                     if (predictionString) {
@@ -191,12 +247,11 @@ const createMockService = () => {
                             prediction: predictionString,
                             marketType: MarketType.PlayerProp,
                             marketValue: line,
-                            probability: 0.51 + (Math.random() * 0.08) // Simulate ~51-59% chance
+                            probability: 0.40 + (Math.random() * 0.15)
                         };
                         predictions.push(generatePrediction(matchInfo, playerPropPrediction));
                     }
                 }
-                
                 dayOffset++;
             }
         }
@@ -206,11 +261,10 @@ const createMockService = () => {
 
     return {
         fetchInitialData: async (): Promise<{ predictions: MatchPrediction[]; liveMatches: LiveMatchPrediction[]; bankroll: BankrollState; userBets: UserBet[]; userSettings: UserSettings; }> => {
-            await new Promise(res => setTimeout(res, 1200));
+            await new Promise(res => setTimeout(res, 800));
             // Ensure live matches are also generated with matchIds. Re-slicing from the full list.
             const liveMatches: LiveMatchPrediction[] = mockPredictions.slice(0, 4).map((p, index) => ({ ...p, scoreA: index % 2 === 0 ? 1 : 48, scoreB: index % 2 === 0 ? 0 : 45, matchTime: index % 2 === 0 ? 35 : 24, momentum: index % 2 === 0 ? Momentum.TeamA : Momentum.Neutral, liveOdds: p.odds * (index % 2 === 0 ? 0.9 : 1.1), cashOutRecommendation: { isRecommended: false, value: null, reason: null }, hasValueAlert: false }));
             const preMatch = mockPredictions.filter(p => !liveMatches.some(live => live.id === p.id));
-            
             return { predictions: preMatch, liveMatches: liveMatches, bankroll: { ...bankrollDB }, userBets: [...userBetsDB], userSettings: { ...userSettingsDB } };
         },
         fetchHeadToHead: async (teamAId: number, teamBId: number): Promise<HeadToHeadFixture[]> => {

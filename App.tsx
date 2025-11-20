@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect } from 'react';
 
 import { Header } from './components/Header';
+import { BottomNavigation } from './components/BottomNavigation';
 import { BankrollManager } from './components/BankrollManager';
 import { MyBets } from './components/MyBets';
 import { LiveMatchCard } from './components/LiveMatchCard';
@@ -25,7 +26,6 @@ const SettingsModal = React.lazy(() => import('./components/SettingsModal').then
 const ConfirmationModal = React.lazy(() => import('./components/ConfirmationModal').then(module => ({ default: module.ConfirmationModal })));
 const AiCuratedParlayCard = React.lazy(() => import('./components/AiCuratedParlayCard').then(module => ({ default: module.AiCuratedParlayCard })));
 const Dashboard = React.lazy(() => import('./components/Dashboard').then(module => ({ default: module.Dashboard })));
-
 
 const App: React.FC = () => {
     // Selectors for state that triggers re-renders
@@ -56,33 +56,39 @@ const App: React.FC = () => {
     }, [fetchInitialData]);
   
   const renderMatchesView = () => (
-      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <main className="lg:col-span-2 xl:col-span-3 space-y-6">
-                <section>
-                    <h2 className="text-2xl font-bold text-brand-text-primary mb-4">Live Matches</h2>
-                    {liveMatches.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {liveMatches.map((match, index) => (
-                                <div key={match.id} className="animate-list-item-enter" style={{ animationDelay: `${index * 100}ms`}}>
-                                    <LiveMatchCard match={match} />
-                                </div>
-                            ))}
-                        </div>
-                    ) : <p className="text-brand-text-secondary">No live matches currently.</p>}
-                </section>
-                
+      <div className="space-y-6 pb-24">
+            {/* Live Matches Section */}
+            <section>
+                <div className="flex items-center justify-between mb-3 px-2">
+                    <h2 className="text-lg font-bold text-brand-text-primary">Live Now</h2>
+                    <span className="text-xs text-brand-green font-semibold px-2 py-1 bg-brand-green/10 rounded-full">
+                        {liveMatches.length} Matches
+                    </span>
+                </div>
+                {liveMatches.length > 0 ? (
+                    <div className="flex overflow-x-auto gap-4 pb-4 px-2 snap-x snap-mandatory hide-scrollbar">
+                        {liveMatches.map((match, index) => (
+                            <div key={match.id} className="snap-center shrink-0 w-[90vw] sm:w-[350px]">
+                                <LiveMatchCard match={match} />
+                            </div>
+                        ))}
+                    </div>
+                ) : <p className="text-brand-text-secondary px-2">No live matches currently.</p>}
+            </section>
+            
+            <div className="px-2 space-y-6">
                 {betOfTheDay && <BetOfTheDayCard prediction={betOfTheDay} />}
 
                 {aiParlay && (
-                    <Suspense fallback={<div className="h-48 bg-brand-bg-light rounded-lg animate-pulse"></div>}>
+                    <Suspense fallback={<div className="h-48 bg-brand-bg-light rounded-2xl animate-pulse"></div>}>
                         <AiCuratedParlayCard predictions={aiParlay} />
                     </Suspense>
                 )}
 
                 <section>
-                    <h2 className="text-2xl font-bold text-brand-text-primary mb-4">Upcoming Matches</h2>
+                    <h2 className="text-lg font-bold text-brand-text-primary mb-4">Upcoming</h2>
                     <FilterBar />
-                    <div className="space-y-4 mt-4">
+                    <div className="space-y-3 mt-4">
                         {filteredPredictions.map((p, index) => {
                             const isSelected = ticketSelections.some(s => s.id === p.id);
                             return (
@@ -93,85 +99,94 @@ const App: React.FC = () => {
                         })}
                     </div>
                 </section>
-            </main>
-
-            <aside className="lg:col-span-1 xl:col-span-1 space-y-6 lg:sticky top-24 self-start">
-               {bankroll && userSettings && <BankrollManager />}
-               <MyBets />
-               {ticketSelections.length > 0 && bankroll && userSettings && <TicketBuilder />}
-            </aside>
+            </div>
        </div>
+  );
+
+  const renderTicketView = () => (
+    <div className="space-y-6 pb-24 px-2">
+        <h2 className="text-2xl font-bold text-brand-text-primary mb-4">Bet Slip</h2>
+        {bankroll && userSettings && <BankrollManager />}
+        {ticketSelections.length > 0 && bankroll && userSettings ? (
+             <TicketBuilder />
+        ) : (
+            <div className="p-8 text-center text-brand-text-secondary bg-brand-bg-light rounded-2xl">
+                <p>Your ticket is empty.</p>
+                <button onClick={() => useStore.getState().setActiveView('matches')} className="mt-4 text-brand-blue font-semibold">Browse Matches</button>
+            </div>
+        )}
+    </div>
   );
 
   const renderContent = () => {
     if (isLoading) {
       return (
-          <>
-             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                    <section>
-                      <h2 className="text-2xl font-bold text-brand-text-primary mb-4">Live Matches</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <MatchCardSkeleton />
-                        <MatchCardSkeleton />
-                      </div>
-                    </section>
-                    <section>
-                      <h2 className="text-2xl font-bold text-brand-text-primary mb-4">Upcoming Matches</h2>
-                      <div className="space-y-4">
-                        <MatchCardSkeleton />
-                        <MatchCardSkeleton />
-                        <MatchCardSkeleton />
-                      </div>
-                    </section>
-                </div>
-                 <aside className="space-y-6">
-                    <BankrollManagerSkeleton />
-                    <MyBetsSkeleton />
-                </aside>
+          <div className="space-y-6 px-2 pb-24">
+             <div className="h-48 w-full bg-brand-bg-light rounded-2xl animate-pulse"></div>
+             <div className="space-y-4">
+                <MatchCardSkeleton />
+                <MatchCardSkeleton />
+                <MatchCardSkeleton />
              </div>
-          </>
+          </div>
       );
     }
 
     if (error) {
-      return <ErrorDisplay message={error} onRetry={fetchInitialData} />;
+      return <div className="px-4 pt-10"><ErrorDisplay message={error} onRetry={fetchInitialData} /></div>;
     }
 
-    switch (activeView) {
-        case 'matches':
-            return renderMatchesView();
-        case 'dashboard':
-            return <Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>;
-        case 'chat':
-            return (
-                <section>
-                    <h1 className="text-3xl font-bold text-brand-text-primary mb-2">AI Analyst Chat</h1>
-                    <p className="text-brand-text-secondary mb-6">Ask me anything about today's matches, or for betting strategies and insights.</p>
-                    <Suspense fallback={<LoadingSpinner />}>
-                        <AiChat />
-                    </Suspense>
-                </section>
-            );
-        default:
-            return renderMatchesView();
+    // Mobile/Touch Optimized Layout Logic
+    // 'ticket' view is treated as a separate screen on mobile
+    if (activeView === 'ticket') {
+        return renderTicketView();
     }
+
+    if (activeView === 'dashboard') {
+        return (
+            <div className="px-2 pb-24 space-y-6">
+                 {bankroll && userSettings && <BankrollManager />}
+                <Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>
+                <div className="pt-4">
+                    <MyBets />
+                </div>
+            </div>
+        );
+    }
+
+    if (activeView === 'chat') {
+        return (
+            <div className="px-2 pb-24 h-[calc(100vh-120px)]">
+                 <h1 className="text-2xl font-bold text-brand-text-primary mb-2">AI Analyst</h1>
+                 <Suspense fallback={<LoadingSpinner />}>
+                    <AiChat />
+                </Suspense>
+            </div>
+        );
+    }
+
+    return renderMatchesView();
   };
 
   return (
-    <div className="bg-brand-bg-dark min-h-screen font-sans text-brand-text-primary">
+    <div className="bg-brand-bg-dark min-h-screen font-sans text-brand-text-primary pb-safe-bottom">
         <Header />
         <NotificationProvider />
-        <div className="container mx-auto px-4 py-8">
+        <main className="container mx-auto max-w-xl pt-4">
           {renderContent()}
-        </div>
+        </main>
+        
+        <BottomNavigation />
+
         <Suspense fallback={<div />}>
             {selectedMatch && <PredictionModal />}
             {selectedLiveMatchForBet && <LiveBetModal />}
             {isSettingsOpen && <SettingsModal />}
             {isConfirmationOpen && <ConfirmationModal />}
         </Suspense>
-        <ResponsibleGamblingBanner />
+        
+        {/* Hidden on mobile as it's in the dashboard view now, but technically Responsible Gaming should be everywhere. 
+            We'll put it at the bottom of the lists in the render functions instead of fixed. */}
     </div>
   );
 };

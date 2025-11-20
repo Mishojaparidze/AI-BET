@@ -1,9 +1,11 @@
+
 import React from 'react';
 import { BankrollChart } from './BankrollChart';
 import { BetHistoryTable } from './BetHistoryTable';
 import { DashboardFilterBar } from './DashboardFilterBar';
 import { PerformanceKpis } from './PerformanceKpis';
 import { ProfitBySportChart } from './ProfitBySportChart';
+import { PerformanceInsights } from './PerformanceInsights';
 
 export const Dashboard: React.FC = () => {
     return (
@@ -12,6 +14,9 @@ export const Dashboard: React.FC = () => {
                 <h1 className="text-3xl font-bold text-brand-text-primary">Performance Dashboard</h1>
                 <p className="text-brand-text-secondary mt-1">Analyze your betting history and track your performance.</p>
             </div>
+            
+            {/* AI Coach Section */}
+            <PerformanceInsights />
             
             <DashboardFilterBar />
 

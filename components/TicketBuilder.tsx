@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { TicketVariationCard } from './TicketVariationCard';
 import { useStore } from '../store/useStore';
@@ -83,8 +84,7 @@ export const TicketBuilder: React.FC = () => {
     };
 
     const groupedSelections = useMemo(() => {
-        // FIX: Explicitly typing the accumulator of the reduce function ensures that TypeScript correctly infers the type of `groupedSelections`. This resolves errors where properties like `.length` and `.map` were not found on the `group` variable during iteration.
-        return selections.reduce((acc: Record<string, TicketSelection[]>, selection) => {
+        return selections.reduce<Record<string, TicketSelection[]>>((acc, selection) => {
             const key = selection.matchId;
             if (!acc[key]) {
                 acc[key] = [];
@@ -104,7 +104,7 @@ export const TicketBuilder: React.FC = () => {
             </div>
             
             <div className="mt-4 space-y-4 max-h-96 overflow-y-auto pr-2">
-                {Object.values(groupedSelections).map((group, index) => {
+                {Object.values(groupedSelections).map((group: TicketSelection[]) => {
                     const isSGP = group.length > 1;
                     return (
                         <div key={group[0].matchId} className={`bg-brand-bg-dark rounded-md p-3 animate-fade-in ${isSGP ? 'border-l-4 border-brand-green' : ''}`}>

@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { LiveMatchPrediction } from '../types';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { MomentumTracker } from './MomentumTracker';
@@ -19,13 +20,23 @@ export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({ match }) => {
         setSelectedMatch: state.setSelectedMatch,
     }));
 
+    const [commentary, setCommentary] = useState(match.liveCommentary);
+    const [commentaryFade, setCommentaryFade] = useState(false);
+
     useEffect(() => {
         const callback = (updatedMatch: LiveMatchPrediction) => {
             updateMatchData(updatedMatch);
+            if (updatedMatch.liveCommentary && updatedMatch.liveCommentary !== commentary) {
+                setCommentaryFade(true);
+                setTimeout(() => {
+                    setCommentary(updatedMatch.liveCommentary);
+                    setCommentaryFade(false);
+                }, 200);
+            }
         };
         subscribe(match.id, callback as any);
         return () => unsubscribe(match.id, callback as any);
-    }, [match.id, updateMatchData]);
+    }, [match.id, updateMatchData, commentary]);
 
     const { teamA, teamB, league, confidence, scoreA, scoreB, matchTime, momentum, liveOdds, hasValueAlert, cashOutRecommendation } = match;
 
@@ -72,6 +83,13 @@ export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({ match }) => {
                 </div>
 
                 <MomentumTracker momentum={momentum} teamA={teamA} teamB={teamB} />
+                
+                {/* Live Commentary Ticker */}
+                <div className="mt-3 h-6 overflow-hidden">
+                    <p className={`text-xs text-center text-brand-text-secondary italic transition-opacity duration-200 ${commentaryFade ? 'opacity-0' : 'opacity-100'}`}>
+                        {commentary || "Match is underway..."}
+                    </p>
+                </div>
             </div>
 
              <div className="border-t border-brand-border px-4 py-3 flex justify-between items-center bg-brand-bg-dark/50 rounded-b-lg">

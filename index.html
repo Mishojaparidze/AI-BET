@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>BetGenius AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -10,17 +12,20 @@
             theme: {
                 extend: {
                     colors: {
-                        'brand-green': '#10b981',
-                        'brand-yellow': '#f59e0b',
-                        'brand-red': '#ef4444',
-                        'brand-bg-dark': '#111827',
-                        'brand-bg-light': '#1f2937',
-                        'brand-border': '#374151',
-                        'brand-text-primary': '#f9fafb',
-                        'brand-text-secondary': '#9ca3af',
+                        // iOS System Colors (Dark Mode approx)
+                        'brand-green': '#32D74B', // iOS Green
+                        'brand-yellow': '#FFD60A', // iOS Yellow
+                        'brand-red': '#FF453A',    // iOS Red
+                        'brand-blue': '#0A84FF',   // iOS Blue
+                        'brand-bg-dark': '#000000', // System Background
+                        'brand-bg-light': '#1C1C1E', // System Gray 6
+                        'brand-bg-elevated': '#2C2C2E', // System Gray 5
+                        'brand-border': '#38383A', // System Gray 4
+                        'brand-text-primary': '#FFFFFF',
+                        'brand-text-secondary': '#8E8E93', // System Gray
                     },
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
                     },
                     keyframes: {
                         'fade-in': {
@@ -28,28 +33,22 @@
                             '100%': { opacity: '1' },
                         },
                         'modal-enter': {
-                            '0%': { transform: 'translateY(20px) scale(0.95)', opacity: '0' },
-                            '100%': { transform: 'translateY(0) scale(1)', opacity: '1' },
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' },
                         },
-                        'list-item-enter': {
-                            '0%': { transform: 'translateY(10px)', opacity: '0' },
-                            '100%': { transform: 'translateY(0)', opacity: '1' },
-                        },
-                        'toast-enter': {
-                            '0%': { transform: 'translateX(100%)', opacity: '0' },
-                            '100%': { transform: 'translateX(0)', opacity: '1' },
-                        },
-                        'toast-exit': {
-                            '0%': { transform: 'translateX(0)', opacity: '1' },
-                            '100%': { transform: 'translateX(100%)', opacity: '0' },
+                        'scale-press': {
+                            '0%': { transform: 'scale(1)' },
+                            '100%': { transform: 'scale(0.96)' },
                         }
                     },
                     animation: {
-                        'fade-in': 'fade-in 0.3s ease-out forwards',
-                        'modal-enter': 'modal-enter 0.3s ease-out forwards',
-                        'list-item-enter': 'list-item-enter 0.5s ease-out forwards',
-                        'toast-enter': 'toast-enter 0.4s ease-out forwards',
-                        'toast-exit': 'toast-exit 0.4s ease-in forwards',
+                        'fade-in': 'fade-in 0.2s ease-out forwards',
+                        'modal-enter': 'modal-enter 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards',
+                        'press': 'scale-press 0.1s ease-in-out',
+                    },
+                    padding: {
+                        'safe-top': 'env(safe-area-inset-top)',
+                        'safe-bottom': 'env(safe-area-inset-bottom)',
                     }
                 }
             }
@@ -60,28 +59,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #111827;
-            background-image: radial-gradient(circle at top, #1f2937, #111827 50%);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #000000;
+            color: #FFFFFF;
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
         }
-        .animate-list-item-enter {
-            opacity: 0; /* Start hidden */
-            animation-fill-mode: forwards;
-        }
-        /* Custom Scrollbar */
+        /* Hide Scrollbar for cleaner UI */
         ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+            width: 0px;
+            background: transparent;
         }
-        ::-webkit-scrollbar-track {
-            background: #1f2937;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #374151;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #4b5563;
+        
+        /* iOS rubber band scrolling fix */
+        html, body {
+            overscroll-behavior-y: none;
         }
     </style>
 </head>
