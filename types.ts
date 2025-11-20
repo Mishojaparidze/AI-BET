@@ -140,6 +140,7 @@ export interface MatchPrediction {
     stadium?: string;
     referee?: string;
     attendance?: number;
+    streak?: number; // New: Positive for winning streak, negative for losing, 0 neutral
 }
 
 export interface LiveMatchPrediction extends MatchPrediction {

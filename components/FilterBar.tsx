@@ -1,81 +1,24 @@
 
-
 import React, { useMemo } from 'react';
-// Import MarketType as well for the new filter
 import { FilterState, ConfidenceTier, MarketType } from '../types';
 import { useStore } from '../store/useStore';
 
-// FilterSelect can remain as a local helper component
-const FilterSelect: React.FC<{
-    label: string;
-    value: string;
-    options: string[];
-    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-}> = ({ label, value, options, onChange }) => (
-    <div>
-        <label className="block text-xs font-medium text-brand-text-secondary mb-1">{label}</label>
-        <select 
-            value={value}
-            onChange={onChange}
-            className="w-full bg-brand-bg-dark border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary focus:ring-2 focus:ring-brand-green focus:border-brand-green"
-        >
-            <option value="All">All</option>
-            {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-        </select>
-    </div>
+const SearchIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
 );
 
-// This is the new button-based UI for the Confidence filter
-const ConfidenceButtonGroup: React.FC<{
-    value: ConfidenceTier | 'All';
-    onChange: (value: ConfidenceTier | 'All') => void;
-}> = ({ value, onChange }) => {
-    const options = [
-        { value: 'All', label: 'All' },
-        { value: ConfidenceTier.High, label: 'High' },
-        { value: ConfidenceTier.Medium, label: 'Medium' },
-        { value: ConfidenceTier.Low, label: 'Low' }
-    ] as const;
+const SlidersIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+);
 
-    const getButtonStyles = (optionValue: ConfidenceTier | 'All', currentValue: ConfidenceTier | 'All') => {
-        const isActive = optionValue === currentValue;
-        const baseStyle = 'w-full text-center px-2 py-1.5 text-xs font-bold rounded-md transition-colors border';
-        
-        if (isActive) {
-            switch (optionValue) {
-                case ConfidenceTier.High: return `${baseStyle} bg-brand-green text-white border-brand-green`;
-                case ConfidenceTier.Medium: return `${baseStyle} bg-brand-yellow text-white border-brand-yellow`;
-                case ConfidenceTier.Low: return `${baseStyle} bg-brand-red text-white border-brand-red`;
-                default: return `${baseStyle} bg-brand-green text-white border-brand-green`; // 'All' is active
-            }
-        } else {
-             switch (optionValue) {
-                case ConfidenceTier.High: return `${baseStyle} bg-transparent text-brand-green border-brand-green/50 hover:bg-brand-green/20`;
-                case ConfidenceTier.Medium: return `${baseStyle} bg-transparent text-brand-yellow border-brand-yellow/50 hover:bg-brand-yellow/20`;
-                case ConfidenceTier.Low: return `${baseStyle} bg-transparent text-brand-red border-brand-red/50 hover:bg-brand-red/20`;
-                default: return `${baseStyle} bg-transparent text-brand-text-secondary border-brand-border hover:bg-brand-border`; // 'All' is inactive
-            }
-        }
-    };
-
-    return (
-        <div>
-            <label className="block text-xs font-medium text-brand-text-secondary mb-2">Confidence</label>
-            <div className="flex bg-brand-bg-dark p-1 rounded-lg gap-2">
-                {options.map(opt => (
-                    <button 
-                        key={opt.value}
-                        onClick={() => onChange(opt.value)}
-                        className={getButtonStyles(opt.value, value)}
-                    >
-                        {opt.label}
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
-};
-
+const FilterPill: React.FC<{ active: boolean; onClick: () => void; label: string }> = ({ active, onClick, label }) => (
+    <button 
+        onClick={onClick}
+        className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${active ? 'bg-brand-text-primary text-brand-bg-dark' : 'bg-brand-bg-elevated text-brand-text-secondary border border-brand-border hover:border-brand-text-secondary'}`}
+    >
+        {label}
+    </button>
+);
 
 export const FilterBar: React.FC = () => {
     const { filters, setFilters, predictions } = useStore(state => ({
@@ -84,81 +27,54 @@ export const FilterBar: React.FC = () => {
         predictions: state.predictions
     }));
     
-    // Create context-aware dropdown options
     const uniqueOptions = useMemo(() => {
         const sports = [...new Set(predictions.map(p => p.sport))];
-        
-        // Filter predictions based on the selected sport before extracting leagues and market types
-        const relevantPredictions = predictions.filter(p => filters.sport === 'All' || p.sport === filters.sport);
-        
-        const leagues = [...new Set(relevantPredictions.map(p => p.league))];
-        const marketTypes = [...new Set(relevantPredictions.map(p => p.marketType))].filter(mt => mt !== MarketType.Parlay);
+        return { sports };
+    }, [predictions]);
 
-        return { sports, leagues, marketTypes };
-    }, [predictions, filters.sport]); // Re-calculate when predictions or the selected sport changes
-
-    // Update the handler to accept ConfidenceTier enum values directly
-    const handleFilterChange = (key: keyof FilterState, value: string | ConfidenceTier) => {
+    const handleFilterChange = (key: keyof FilterState, value: any) => {
         setFilters({ ...filters, [key]: value });
     };
 
     return (
-        <div className="bg-brand-bg-light p-4 rounded-lg border border-brand-border">
-            {/* Using a more responsive grid layout */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="col-span-1 sm:col-span-2 md:col-span-4">
-                    <label htmlFor="search-teams" className="block text-xs font-medium text-brand-text-secondary mb-1">Search Teams</label>
-                    <input 
-                        id="search-teams"
-                        type="text"
-                        placeholder="e.g., Arsenal, Real Madrid..."
-                        value={filters.searchTerm}
-                        onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-                        className="w-full bg-brand-bg-dark border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary focus:ring-2 focus:ring-brand-green focus:border-brand-green"
+        <div className="space-y-3">
+            {/* AI Command Input */}
+            <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <SearchIcon className="h-5 w-5 text-brand-green group-focus-within:text-brand-green transition-colors" />
+                </div>
+                <input 
+                    type="text"
+                    placeholder="Ask BetGenius (e.g. 'Lakers', 'High Confidence', 'NBA')"
+                    value={filters.searchTerm}
+                    onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
+                    className="block w-full pl-10 pr-3 py-3 border border-brand-border rounded-xl leading-5 bg-brand-bg-light text-brand-text-primary placeholder-brand-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-brand-green sm:text-sm shadow-sm transition-all"
+                />
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <SlidersIcon className="h-5 w-5 text-brand-text-secondary" />
+                </div>
+            </div>
+
+            {/* Quick Filter Pills */}
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+                <FilterPill 
+                    active={filters.confidence === ConfidenceTier.High} 
+                    onClick={() => handleFilterChange('confidence', filters.confidence === ConfidenceTier.High ? 'All' : ConfidenceTier.High)} 
+                    label="High Confidence" 
+                />
+                <FilterPill 
+                    active={filters.sortBy === 'highestEV'} 
+                    onClick={() => handleFilterChange('sortBy', 'highestEV')} 
+                    label="High EV+" 
+                />
+                {uniqueOptions.sports.slice(0, 4).map(sport => (
+                    <FilterPill 
+                        key={sport}
+                        active={filters.sport === sport}
+                        onClick={() => handleFilterChange('sport', filters.sport === sport ? 'All' : sport)}
+                        label={sport}
                     />
-                </div>
-                
-                <FilterSelect 
-                    label="Sport" 
-                    value={filters.sport} 
-                    options={uniqueOptions.sports} 
-                    onChange={(e) => handleFilterChange('sport', e.target.value)}
-                />
-                 <FilterSelect 
-                    label="League" 
-                    value={filters.league} 
-                    options={uniqueOptions.leagues} 
-                    onChange={(e) => handleFilterChange('league', e.target.value)}
-                />
-                {/* Adding the missing Market Type filter */}
-                 <FilterSelect 
-                    label="Market Type" 
-                    value={filters.marketType} 
-                    options={uniqueOptions.marketTypes} 
-                    onChange={(e) => handleFilterChange('marketType', e.target.value)}
-                />
-                 <div>
-                    <label className="block text-xs font-medium text-brand-text-secondary mb-1">Sort By</label>
-                    <select 
-                        value={filters.sortBy}
-                        onChange={(e) => handleFilterChange('sortBy', e.target.value as FilterState['sortBy'])}
-                        className="w-full bg-brand-bg-dark border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary focus:ring-2 focus:ring-brand-green focus:border-brand-green"
-                    >
-                        <option value="matchDate">Match Date</option>
-                        <option value="highestConfidence">Highest Confidence</option>
-                        <option value="highestEV">Highest EV</option>
-                        <option value="highestOdds">Highest Odds</option>
-                        <option value="lowestOdds">Lowest Odds</option>
-                    </select>
-                </div>
-                
-                {/* Replacing the old dropdown with the new button group for Confidence */}
-                <div className="col-span-1 sm:col-span-2 md:col-span-4">
-                   <ConfidenceButtonGroup
-                        value={filters.confidence}
-                        onChange={(value) => handleFilterChange('confidence', value)}
-                   />
-                </div>
+                ))}
             </div>
         </div>
     );

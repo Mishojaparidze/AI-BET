@@ -1,3 +1,4 @@
+
 import { type MatchPrediction, type LiveMatchPrediction, ConfidenceTier, Momentum, type BankrollState, RiskLevel, type AIDecisionFlowStep, type UserBet, type TicketSelection, type TicketVariation, Sentiment, DataSourceStatus, type UserSettings, type HeadToHeadFixture, type OddsHistoryPoint, MarketType } from '../types';
 import { API_BASE_URL } from './config';
 
@@ -139,6 +140,9 @@ const createMockService = () => {
 
         let confidence: ConfidenceTier;
         if (probability > 0.60) confidence = ConfidenceTier.High; else if (probability > 0.45) confidence = ConfidenceTier.Medium; else confidence = ConfidenceTier.Low;
+        
+        // Generate random streak for visual flair
+        const streak = Math.floor(Math.random() * 6) - 1; // -1 to 4
 
         return {
             id: `${homeTeam.id}-${awayTeam.id}-${prediction.replace(/\s/g, '')}`.toLowerCase(),
@@ -150,6 +154,7 @@ const createMockService = () => {
             matchDate: matchDate.toISOString(),
             prediction, marketType, marketValue,
             confidence, odds,
+            streak: streak > 2 ? streak : undefined,
             reasoning: "Initial statistical model scan. Click for deep AI analysis.",
             aiAnalysis: { keyPositives: ["Statistical Edge identified", "Market inefficiency detected"], keyNegatives: ["Volatility high"], confidenceBreakdown: [ { model: 'Base Model', weight: 100, color: 'bg-gray-500'}], expectedValue: parseFloat(expectedValue.toFixed(1)), estimatedWinProbability: probability, kellyStakePercentage: parseFloat(kellyStakePercentage.toFixed(1)), marketInsights: { sharpMoneyAlignment: Math.random() > 0.4, publicBettingPercentage: Math.floor(Math.random() * 40) + 50, significantOddsMovement, oddsMovementDirection }, riskLevel: kellyStakePercentage > 4 ? RiskLevel.Aggressive : kellyStakePercentage > 2 ? RiskLevel.Moderate : RiskLevel.Conservative, decisionFlow: [ { step: 'Screening', status: 'pass', reason: 'Passed initial filters' } ], sentimentAnalysis: { overallSentiment: Sentiment.Neutral, newsSummary: "Loading AI Context...", socialMediaKeywords: [] }, dataSources: [], formAnalysis: { teamA: homeStats?.formString || 'N/A', teamB: awayStats?.formString || 'N/A' }, playerAnalysis: [], bettingAngle: "AI Model initialized. Open details for full deep-dive.", gameScenario: { narrative: "Pending AI generation...", keyEvents: [] }, statisticalProfile: { teamA: { avgGoalsScored: homeStats?.avgGoalsScored || 0, avgGoalsConceded: homeStats?.avgGoalsConceded || 0, daysSinceLastMatch: 7 }, teamB: { avgGoalsScored: awayStats?.avgGoalsScored || 0, avgGoalsConceded: awayStats?.avgGoalsConceded || 0, daysSinceLastMatch: 7 }, } }
         };
