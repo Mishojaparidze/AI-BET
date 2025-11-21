@@ -130,6 +130,25 @@ export const PredictionModal: React.FC = () => {
             setIsChallenging(false);
         }
     };
+
+    const handleRetryAnalysis = async () => {
+        if (isAiAnalyzing) return;
+        setIsAiAnalyzing(true);
+        try {
+            const insight = await generateMatchInsight(match as MatchPrediction);
+            if (insight && Object.keys(insight).length > 0) {
+                updateMatchData({
+                    ...match,
+                    aiAnalysis: { ...match.aiAnalysis, ...insight }
+                } as MatchPrediction);
+            }
+        } catch (e) {
+             console.error("Retry failed", e);
+        } finally {
+            setIsAiAnalyzing(false);
+            setAiAnalyzed(true);
+        }
+    }
     
     const renderDecisionFlow = () => (
         <div className="space-y-2">
@@ -158,11 +177,26 @@ export const PredictionModal: React.FC = () => {
                         <SparklesIcon className="w-4 h-4 text-brand-yellow" />
                         <span className="text-xs font-bold text-brand-yellow uppercase tracking-wide">AI Deep Dive</span>
                      </div>
-                     <p className="text-[15px] text-brand-text-primary leading-relaxed">{aiAnalysis.bettingAngle}</p>
-                     <div className="mt-3 flex items-center gap-2">
-                        <span className="text-xs text-brand-text-secondary font-medium uppercase">Risk Level</span>
-                        <span className={`px-2 py-0.5 text-xs font-bold rounded-md ${aiAnalysis.riskLevel === RiskLevel.Conservative ? 'text-brand-blue bg-brand-blue/10' : aiAnalysis.riskLevel === RiskLevel.Moderate ? 'text-brand-yellow bg-brand-yellow/10' : 'text-brand-red bg-brand-red/10'}`}>{aiAnalysis.riskLevel}</span>
-                     </div>
+                     
+                     {aiAnalysis.bettingAngle.startsWith("AI Model initialized") ? (
+                        <div className="text-center py-6 border border-dashed border-brand-border rounded-lg bg-brand-bg-dark/50">
+                            <p className="text-sm text-brand-text-secondary mb-3">Analysis could not be generated at this time.</p>
+                            <button 
+                                onClick={handleRetryAnalysis}
+                                className="px-4 py-2 bg-brand-blue text-white text-xs font-bold rounded-lg hover:bg-brand-blue/90 transition-colors"
+                            >
+                                Retry Analysis
+                            </button>
+                        </div>
+                     ) : (
+                        <>
+                             <p className="text-[15px] text-brand-text-primary leading-relaxed">{aiAnalysis.bettingAngle}</p>
+                             <div className="mt-3 flex items-center gap-2">
+                                <span className="text-xs text-brand-text-secondary font-medium uppercase">Risk Level</span>
+                                <span className={`px-2 py-0.5 text-xs font-bold rounded-md ${aiAnalysis.riskLevel === RiskLevel.Conservative ? 'text-brand-blue bg-brand-blue/10' : aiAnalysis.riskLevel === RiskLevel.Moderate ? 'text-brand-yellow bg-brand-yellow/10' : 'text-brand-red bg-brand-red/10'}`}>{aiAnalysis.riskLevel}</span>
+                             </div>
+                        </>
+                     )}
                 </div>
             )}
 

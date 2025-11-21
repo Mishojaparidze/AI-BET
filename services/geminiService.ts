@@ -5,6 +5,18 @@ import { type MatchPrediction, type LiveMatchPrediction, type UserBet, type Bank
 // Initialize the Gemini AI client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+// --- Helper: Retry Logic ---
+async function withRetry<T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+    try {
+        return await operation();
+    } catch (error) {
+        if (retries <= 0) throw error;
+        // Exponential backoff: 1000ms, 2000ms, 4000ms...
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return withRetry(operation, retries - 1, delay * 2);
+    }
+}
+
 interface AnalysisContext {
     predictions: MatchPrediction[];
     liveMatches: LiveMatchPrediction[];
@@ -114,18 +126,18 @@ export const getAiChallengeResponse = async (prediction: MatchPrediction | LiveM
   `;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-2.5-flash', 
       contents: prompt,
       config: {
         temperature: 1, // Higher creativity for the "skeptic" persona
       }
-    });
+    }));
     
     return response.text || "Analysis unavailable.";
   } catch (error) {
     console.error("Gemini Challenge Error:", error);
-    return "Unable to generate counter-argument.";
+    return "Unable to generate counter-argument at this time.";
   }
 };
 
@@ -144,7 +156,7 @@ export const generateMatchInsight = async (match: MatchPrediction): Promise<Part
     `;
 
     try {
-        const response = await ai.models.generateContent({
+        const response = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
@@ -192,7 +204,7 @@ export const generateMatchInsight = async (match: MatchPrediction): Promise<Part
                     required: ["bettingAngle", "keyPositives", "keyNegatives", "estimatedWinProbability", "riskLevel"]
                 }
             }
-        });
+        }));
 
         const jsonText = response.text;
         if (!jsonText) throw new Error("No data returned from AI");
@@ -200,7 +212,7 @@ export const generateMatchInsight = async (match: MatchPrediction): Promise<Part
         return { ...data, riskLevel: data.riskLevel as RiskLevel };
 
     } catch (error) {
-        console.error("Deep Dive Analysis Failed:", error);
+        console.error("Deep Dive Analysis Failed after retries:", error);
         return {}; 
     }
 };
@@ -227,7 +239,7 @@ export const generatePerformanceReport = async (bets: UserBet[]): Promise<CoachI
     `;
 
     try {
-        const response = await ai.models.generateContent({
+        const response = await withRetry(() => ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
@@ -243,14 +255,14 @@ export const generatePerformanceReport = async (bets: UserBet[]): Promise<CoachI
                     required: ["summary", "strengths", "weaknesses", "actionableTip"]
                 }
             }
-        });
+        }));
         
         const jsonText = response.text;
         if (!jsonText) throw new Error("AI returned empty analysis");
         return JSON.parse(jsonText) as CoachInsight;
 
     } catch (error) {
-        console.error("Coach Analysis Failed", error);
+        console.error("Coach Analysis Failed after retries", error);
         return {
             summary: "Insufficient data for a full report.",
             strengths: ["Account active"],
